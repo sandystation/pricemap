@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Stats — PriceMap{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Market Statistics</h1>
+
+<!-- By Country -->
+<h2 class="text-lg font-semibold mb-3">By Country</h2>
+<div class="bg-white rounded-lg border overflow-hidden mb-8">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b">
+            <tr>
+                <th class="px-4 py-2 text-left">Country</th>
+                <th class="px-4 py-2 text-right">Properties</th>
+                <th class="px-4 py-2 text-right">Avg Price</th>
+                <th class="px-4 py-2 text-right">Min</th>
+                <th class="px-4 py-2 text-right">Max</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in by_country %}
+            <tr class="border-b last:border-0">
+                <td class="px-4 py-2 font-medium">{{ s.name }}</td>
+                <td class="px-4 py-2 text-right">{{ s.count }}</td>
+                <td class="px-4 py-2 text-right">{{ s.avg | eur }}</td>
+                <td class="px-4 py-2 text-right text-gray-500">{{ s.min | eur }}</td>
+                <td class="px-4 py-2 text-right text-gray-500">{{ s.max | eur }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- By Property Type -->
+<h2 class="text-lg font-semibold mb-3">By Property Type</h2>
+<div class="bg-white rounded-lg border overflow-hidden mb-8">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b">
+            <tr>
+                <th class="px-4 py-2 text-left">Type</th>
+                <th class="px-4 py-2 text-right">Count</th>
+                <th class="px-4 py-2 text-right">Avg Price</th>
+                <th class="px-4 py-2 text-right">Min</th>
+                <th class="px-4 py-2 text-right">Max</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in by_type %}
+            <tr class="border-b last:border-0">
+                <td class="px-4 py-2 font-medium">{{ s.name }}</td>
+                <td class="px-4 py-2 text-right">{{ s.count }}</td>
+                <td class="px-4 py-2 text-right">{{ s.avg | eur }}</td>
+                <td class="px-4 py-2 text-right text-gray-500">{{ s.min | eur }}</td>
+                <td class="px-4 py-2 text-right text-gray-500">{{ s.max | eur }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Top Localities -->
+<h2 class="text-lg font-semibold mb-3">Top Localities</h2>
+<div class="bg-white rounded-lg border overflow-hidden mb-8">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b">
+            <tr>
+                <th class="px-4 py-2 text-left">Locality</th>
+                <th class="px-4 py-2 text-right">Count</th>
+                <th class="px-4 py-2 text-right">Avg Price</th>
+                <th class="px-4 py-2 text-right">Min</th>
+                <th class="px-4 py-2 text-right">Max</th>
+                <th class="px-4 py-2 text-right" style="width:200px">Distribution</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set max_count = by_locality[0].count if by_locality else 1 %}
+            {% for s in by_locality %}
+            <tr class="border-b last:border-0">
+                <td class="px-4 py-2 font-medium">{{ s.name }}</td>
+                <td class="px-4 py-2 text-right">{{ s.count }}</td>
+                <td class="px-4 py-2 text-right">{{ s.avg | eur }}</td>
+                <td class="px-4 py-2 text-right text-gray-500">{{ s.min | eur }}</td>
+                <td class="px-4 py-2 text-right text-gray-500">{{ s.max | eur }}</td>
+                <td class="px-4 py-2">
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="bg-blue-500 rounded-full h-2" style="width: {{ (s.count / max_count * 100) | int }}%"></div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- History Events -->
+<h2 class="text-lg font-semibold mb-3">Change History Events</h2>
+<div class="bg-white rounded-lg border p-5 mb-8">
+    {% if history_events %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {% for event, count in history_events %}
+        <div class="text-center p-3 rounded bg-gray-50">
+            <div class="text-2xl font-bold text-gray-700">{{ count }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ event }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500 text-center">No change events yet. Re-run scrapers to detect changes.</p>
+    {% endif %}
+</div>
+{% endblock %}

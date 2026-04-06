@@ -62,3 +62,8 @@ pipeline/.scrapy/
 
 # Postgres data (if mounted locally)
 pgdata/
+
+# Document store data
+data/collections/
+data/images/
+data/*.db

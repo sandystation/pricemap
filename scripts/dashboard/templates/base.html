@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PriceMap Dashboard{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .card { @apply bg-white rounded-lg border border-gray-200 p-4 shadow-sm; }
+        .badge { @apply inline-block rounded-full px-2 py-0.5 text-xs font-medium; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-white border-b border-gray-200 px-6 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="/" class="text-xl font-bold text-blue-600">PriceMap</a>
+            <div class="flex gap-4 text-sm">
+                <a href="/" class="text-gray-600 hover:text-gray-900">Home</a>
+                <a href="/search" class="text-gray-600 hover:text-gray-900">Search</a>
+                <a href="/stats" class="text-gray-600 hover:text-gray-900">Stats</a>
+                {% for c in ["mt_remax", "mt_maltapark", "bg_imot"] %}
+                <a href="/browse/{{ c }}" class="text-gray-600 hover:text-gray-900">{{ c }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </nav>
+    <main class="max-w-7xl mx-auto px-6 py-6">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

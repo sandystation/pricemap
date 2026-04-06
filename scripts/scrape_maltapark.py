@@ -6,7 +6,6 @@ Detail page: https://www.maltapark.com/item/details/{id}
 Server-rendered HTML, easy to parse. ~4000 property-for-sale listings.
 """
 
-import json
 import logging
 import re
 import time
@@ -14,9 +13,8 @@ import time
 from bs4 import BeautifulSoup
 
 from scraper_base import (
+    get_store,
     get_client,
-    get_db,
-    save_property,
     download_images,
     start_scrape_run,
     finish_scrape_run,
@@ -26,7 +24,6 @@ logger = logging.getLogger("maltapark")
 
 BASE = "https://www.maltapark.com"
 LISTING_URL = f"{BASE}/listings/category/248"  # Property for sale
-MAX_PAGES = 5  # ~48 items/page = ~240 listings
 DELAY = 2.0
 
 TYPE_MAP = {
@@ -60,14 +57,12 @@ def parse_listing_page(html: str) -> list[dict]:
         if not item_id:
             continue
 
-        # Title/link
         header = item.select_one("a.header")
         title = header.get_text().strip() if header else ""
         link = header.get("href", "") if header else ""
         if link.startswith("/"):
             link = BASE + link
 
-        # Price
         price_el = item.select_one("span.price span")
         price = None
         if price_el:
@@ -79,7 +74,6 @@ def parse_listing_page(html: str) -> list[dict]:
                 except ValueError:
                     pass
 
-        # Extract details from the .extra section
         details = {}
         for detail_item in item.select(".extra .details span.item"):
             icon = detail_item.select_one("i.ouricon")
@@ -93,10 +87,7 @@ def parse_listing_page(html: str) -> list[dict]:
                     details["locality"] = value
                 elif "house" in classes:
                     details["property_type"] = value
-                elif "classified" in classes:
-                    details["transaction"] = value
 
-        # Image
         img = item.select_one("a.imagelink img")
         thumb = img.get("src", "") if img else ""
         if thumb.startswith("/"):
@@ -119,12 +110,10 @@ def parse_detail_page(html: str) -> dict:
     soup = BeautifulSoup(html, "lxml")
     data = {}
 
-    # Title
     h1 = soup.select_one("h1.top-title span")
     if h1:
         data["title"] = h1.get_text().strip()
 
-    # Price
     price_h1 = soup.select_one("h1.top-price")
     if price_h1:
         price_text = price_h1.get_text().strip()
@@ -135,12 +124,10 @@ def parse_detail_page(html: str) -> dict:
             except ValueError:
                 pass
 
-    # Description
     desc = soup.select_one("div.readmore-wrapper")
     if desc:
         data["description"] = desc.get_text(separator="\n").strip()
 
-    # Property details
     for item in soup.select("div.item-details span.item, div.details-list span.item"):
         label_el = item.select_one("b, label")
         value_el = item.select_one("span:not(b)")
@@ -176,7 +163,12 @@ def parse_detail_page(html: str) -> dict:
             if sqm_match:
                 data["area_sqm"] = float(sqm_match.group(1))
 
-    # Images (from slideshow/gallery)
+    # Try extracting area from description if not found in fields
+    if not data.get("area_sqm") and data.get("description"):
+        sqm_match = re.search(r"(\d+)\s*(?:sq\.?\s*m|m²|sqm)", data["description"], re.IGNORECASE)
+        if sqm_match:
+            data["area_sqm"] = float(sqm_match.group(1))
+
     image_urls = []
     for a in soup.select("a.fancybox, a[data-fancybox]"):
         href = a.get("href", "")
@@ -184,7 +176,6 @@ def parse_detail_page(html: str) -> dict:
             if href.startswith("/"):
                 href = BASE + href
             image_urls.append(href)
-    # Fallback: any large images
     if not image_urls:
         for img in soup.select("img[src*='/asset/itemphotos/']"):
             src = img.get("src", "")
@@ -193,10 +184,16 @@ def parse_detail_page(html: str) -> dict:
             image_urls.append(src)
     data["image_urls"] = list(dict.fromkeys(image_urls))
 
-    # Seller info
     seller = soup.select_one("div.header.username, span.username")
     if seller:
         data["agent_name"] = seller.get_text().strip()
+
+    page_text = soup.get_text(separator="\n").lower()
+    data["has_parking"] = 1 if "parking" in page_text or "garage" in page_text else 0
+    data["has_pool"] = data.get("has_pool", 1 if "pool" in page_text else 0)
+    data["has_garden"] = data.get("has_garden", 1 if "garden" in page_text else 0)
+    data["has_elevator"] = 1 if "lift" in page_text or "elevator" in page_text else 0
+    data["has_balcony"] = 1 if "balcony" in page_text or "terrace" in page_text else 0
 
     return data
 
@@ -219,16 +216,18 @@ def map_condition(raw: str) -> str | None:
 
 
 def main():
-    conn = get_db()
+    store = get_store()
+    coll = store.collection("mt_maltapark")
     client = get_client()
-    run_id = start_scrape_run(conn, "mt_maltapark", "MT")
+    run_id = start_scrape_run(store, "mt_maltapark", "MT")
 
     total_scraped = 0
     total_new = 0
     total_errors = 0
 
     try:
-        for page in range(1, MAX_PAGES + 1):
+        page = 1
+        while True:
             url = f"{LISTING_URL}?page={page}"
             logger.info(f"Fetching listing page {page}: {url}")
 
@@ -237,11 +236,11 @@ def main():
                 if resp.status_code != 200:
                     logger.warning(f"Got {resp.status_code}")
                     total_errors += 1
-                    continue
+                    break
             except Exception as e:
                 logger.error(f"Failed: {e}")
                 total_errors += 1
-                continue
+                break
 
             listings = parse_listing_page(resp.text)
             if not listings:
@@ -253,17 +252,13 @@ def main():
 
             for listing in listings:
                 item_id = listing["item_id"]
+                doc_id = f"mt_maltapark:{item_id}"
 
-                # Check existing
-                existing = conn.execute(
-                    "SELECT id FROM properties WHERE source='mt_maltapark' AND external_id=?",
-                    (item_id,),
-                ).fetchone()
-                if existing:
+                # Staleness check: skip if seen within 20 hours
+                if not coll.is_stale(doc_id, hours=20):
                     total_scraped += 1
                     continue
 
-                # Fetch detail page
                 detail_url = listing.get("url") or f"{BASE}/item/details/{item_id}"
                 logger.info(f"  Scraping detail: {detail_url}")
 
@@ -282,7 +277,6 @@ def main():
 
                 detail = parse_detail_page(resp.text)
 
-                # Merge listing data
                 price = detail.get("price") or listing.get("price")
                 locality = detail.get("locality") or listing.get("locality")
                 raw_type = detail.get("property_type_raw") or listing.get("property_type", "")
@@ -293,7 +287,6 @@ def main():
                         bedrooms = int(listing["bedrooms"])
                     except (ValueError, TypeError):
                         pass
-
                 area = detail.get("area_sqm")
 
                 record = {
@@ -318,39 +311,42 @@ def main():
                         round(price / area, 2) if price and area and area > 0 else None
                     ),
                     "price_adjusted_eur": round(price * 0.97, 2) if price else None,
-                    "has_garden": detail.get("has_garden", 0),
+                    "has_parking": detail.get("has_parking", 0),
                     "has_pool": detail.get("has_pool", 0),
-                    "has_garage": detail.get("has_garage", 0),
+                    "has_garden": detail.get("has_garden", 0),
+                    "has_elevator": detail.get("has_elevator", 0),
+                    "has_balcony": detail.get("has_balcony", 0),
                     "agent_name": detail.get("agent_name"),
                     "image_urls": detail.get("image_urls", []),
                     "image_local_paths": [],
-                    "raw_json": {
-                        "property_type_raw": raw_type,
-                        "condition_raw": detail.get("condition_raw"),
-                    },
+                    "property_type_raw": raw_type,
+                    "condition_raw": detail.get("condition_raw"),
                 }
 
-                # Download images
                 if record["image_urls"]:
                     record["image_local_paths"] = download_images(
                         client, record["image_urls"], "mt_maltapark", item_id
                     )
 
-                prop_id, is_new = save_property(conn, record)
+                doc_id, is_new = coll.save_property(record)
                 total_scraped += 1
                 if is_new:
                     total_new += 1
-                    logger.info(
-                        f"  NEW #{prop_id}: {record['title'][:50]} | "
-                        f"{price} EUR | {locality}"
-                    )
+                    if total_new <= 20 or total_new % 50 == 0:
+                        logger.info(
+                            f"  NEW {doc_id}: {record['title'][:50]} | "
+                            f"{price} EUR | {locality}"
+                        )
 
                 time.sleep(DELAY)
 
+            page += 1
+
     finally:
-        finish_scrape_run(conn, run_id, total_scraped, total_new, total_errors)
+        finish_scrape_run(store, run_id, total_scraped, total_new, total_errors)
+        coll.close()
         client.close()
-        conn.close()
+        store.close()
 
     logger.info(f"\nDONE: {total_scraped} total, {total_new} new, {total_errors} errors")
 

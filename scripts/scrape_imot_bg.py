@@ -24,8 +24,7 @@ from bs4 import BeautifulSoup
 from scraper_base import (
     BGN_EUR_RATE,
     get_client,
-    get_db,
-    save_property,
+    get_store,
     download_images,
     start_scrape_run,
     finish_scrape_run,
@@ -35,12 +34,44 @@ logger = logging.getLogger("imot_bg")
 
 # Cities to scrape with their URL slugs
 CITIES = [
+    # Major cities
     ("grad-sofiya", "Sofia"),
     ("grad-plovdiv", "Plovdiv"),
     ("grad-varna", "Varna"),
     ("grad-burgas", "Burgas"),
     ("grad-ruse", "Ruse"),
     ("grad-stara-zagora", "Stara Zagora"),
+    # Medium cities
+    ("grad-pleven", "Pleven"),
+    ("grad-sliven", "Sliven"),
+    ("grad-dobrich", "Dobrich"),
+    ("grad-shumen", "Shumen"),
+    ("grad-blagoevgrad", "Blagoevgrad"),
+    ("grad-veliko-tarnovo", "Veliko Tarnovo"),
+    ("grad-vratsa", "Vratsa"),
+    ("grad-gabrovo", "Gabrovo"),
+    ("grad-haskovo", "Haskovo"),
+    ("grad-kardzhali", "Kardzhali"),
+    ("grad-kyustendil", "Kyustendil"),
+    ("grad-lovech", "Lovech"),
+    ("grad-montana", "Montana"),
+    ("grad-pazardzhik", "Pazardzhik"),
+    ("grad-pernik", "Pernik"),
+    ("grad-razgrad", "Razgrad"),
+    ("grad-silistra", "Silistra"),
+    ("grad-smolyan", "Smolyan"),
+    ("grad-targovishte", "Targovishte"),
+    ("grad-vidin", "Vidin"),
+    ("grad-yambol", "Yambol"),
+    # Resort / tourist towns
+    ("grad-bansko", "Bansko"),
+    ("grad-sandanski", "Sandanski"),
+    ("grad-pomorie", "Pomorie"),
+    ("grad-nesebar", "Nesebar"),
+    ("grad-sozopol", "Sozopol"),
+    ("grad-sveti-vlas", "Sveti Vlas"),
+    ("KK-slanchev-bryag", "Sunny Beach"),
+    ("KK-zlatni-pyasatsi", "Golden Sands"),
 ]
 
 # Property type mapping (Bulgarian -> our types)
@@ -68,7 +99,7 @@ TYPE_MAP = {
 }
 
 BASE = "https://www.imot.bg"
-MAX_PAGES_PER_CITY = 3  # Limit for initial scrape (3 pages * 40 = ~120 listings per city)
+MAX_PAGES_PER_CITY = 50  # Safety cap per city
 DELAY = 2.0  # Seconds between requests
 
 
@@ -277,13 +308,14 @@ def detect_rooms(title: str) -> int | None:
     return None
 
 
-def scrape_city(client, conn, city_slug: str, city_name: str, run_id: int):
+def scrape_city(client, coll, city_slug: str, city_name: str):
     """Scrape listings for a single city."""
     items_scraped = 0
     items_new = 0
     errors = 0
 
-    for page in range(1, MAX_PAGES_PER_CITY + 1):
+    page = 1
+    while page <= MAX_PAGES_PER_CITY:
         if page == 1:
             url = f"{BASE}/obiavi/prodazhbi/{city_slug}"
         else:
@@ -296,11 +328,11 @@ def scrape_city(client, conn, city_slug: str, city_name: str, run_id: int):
             if resp.status_code != 200:
                 logger.warning(f"Got {resp.status_code} for {url}")
                 errors += 1
-                continue
+                break
         except Exception as e:
             logger.error(f"Failed to fetch {url}: {e}")
             errors += 1
-            continue
+            break
 
         listings = parse_search_page(resp.text)
         if not listings:
@@ -313,13 +345,10 @@ def scrape_city(client, conn, city_slug: str, city_name: str, run_id: int):
         for listing in listings:
             detail_url = listing["url"]
             ext_id = listing.get("external_id") or detail_url.split("obiava-")[-1].split("-")[0]
+            doc_id = f"bg_imot:{ext_id}"
 
-            # Check if already scraped recently
-            existing = conn.execute(
-                "SELECT id FROM properties WHERE source='bg_imot' AND external_id=?",
-                (ext_id,),
-            ).fetchone()
-            if existing:
+            # Staleness check: skip if seen within 20 hours
+            if not coll.is_stale(doc_id, hours=20):
                 items_scraped += 1
                 continue
 
@@ -344,6 +373,12 @@ def scrape_city(client, conn, city_slug: str, city_name: str, run_id: int):
             if listing.get("price_eur") and not detail.get("price_eur"):
                 detail["price_eur"] = listing["price_eur"]
 
+            # Also try extracting area from search info text
+            if not detail.get("area_sqm") and listing.get("info_text"):
+                area_match = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:кв\.?\s*м|m²|m2)", listing["info_text"])
+                if area_match:
+                    detail["area_sqm"] = float(area_match.group(1).replace(",", "."))
+
             # Compute EUR price
             price_eur = detail.get("price_eur")
             if not price_eur and detail.get("price_original"):
@@ -367,11 +402,9 @@ def scrape_city(client, conn, city_slug: str, city_name: str, run_id: int):
             rooms = detect_rooms(title)
             locality = detail.get("quarter_name") or detail.get("city_name") or city_name
 
-            # Build address
             address_parts = [p for p in [detail.get("quarter_name"), city_name] if p]
             address = ", ".join(address_parts)
 
-            # Download images
             image_urls = detail.get("image_urls", [])
             local_paths = []
             if image_urls:
@@ -386,6 +419,7 @@ def scrape_city(client, conn, city_slug: str, city_name: str, run_id: int):
                 "description": detail.get("description", ""),
                 "address_raw": address,
                 "locality": locality,
+                "city": city_name,
                 "property_type": prop_type,
                 "area_sqm": detail.get("area_sqm"),
                 "floor": detail.get("floor"),
@@ -411,31 +445,29 @@ def scrape_city(client, conn, city_slug: str, city_name: str, run_id: int):
                 "image_urls": image_urls,
                 "image_local_paths": local_paths,
                 "listing_date": detail.get("listing_date_raw"),
-                "raw_json": {
-                    "search_info": listing.get("info_text"),
-                    "amenities": detail.get("amenities_raw"),
-                    "city_slug": city_slug,
-                    "description_short": detail.get("description_short"),
-                },
+                "search_info": listing.get("info_text"),
+                "amenities": detail.get("amenities_raw"),
+                "description_short": detail.get("description_short"),
             }
 
-            prop_id, is_new = save_property(conn, record)
+            doc_id, is_new = coll.save_property(record)
             items_scraped += 1
             if is_new:
                 items_new += 1
-                logger.info(f"  NEW #{prop_id}: {title[:60]} | {price_eur} EUR")
-            else:
-                logger.info(f"  Updated #{prop_id}")
+                logger.info(f"  NEW {doc_id}: {title[:60]} | {price_eur} EUR")
 
             time.sleep(DELAY)
+
+        page += 1
 
     return items_scraped, items_new, errors
 
 
 def main():
-    conn = get_db()
+    store = get_store()
+    coll = store.collection("bg_imot")
     client = get_client()
-    run_id = start_scrape_run(conn, "bg_imot", "BG")
+    run_id = start_scrape_run(store, "bg_imot", "BG")
 
     total_scraped = 0
     total_new = 0
@@ -446,15 +478,16 @@ def main():
             logger.info(f"\n{'='*60}")
             logger.info(f"Scraping {city_name} ({city_slug})")
             logger.info(f"{'='*60}")
-            scraped, new, errors = scrape_city(client, conn, city_slug, city_name, run_id)
+            scraped, new, errors = scrape_city(client, coll, city_slug, city_name)
             total_scraped += scraped
             total_new += new
             total_errors += errors
             logger.info(f"{city_name}: {scraped} scraped, {new} new, {errors} errors")
     finally:
-        finish_scrape_run(conn, run_id, total_scraped, total_new, total_errors)
+        finish_scrape_run(store, run_id, total_scraped, total_new, total_errors)
+        coll.close()
         client.close()
-        conn.close()
+        store.close()
 
     logger.info(f"\nDONE: {total_scraped} total, {total_new} new, {total_errors} errors")
 

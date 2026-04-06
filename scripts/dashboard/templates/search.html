@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Search — PriceMap{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Search Properties</h1>
+
+<form method="get" class="bg-white rounded-lg border p-5 mb-6">
+    <div class="flex gap-3">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search by title, locality, description, address..."
+               class="flex-1 rounded border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:border-blue-400"
+               autofocus>
+        <select name="country" class="rounded border border-gray-300 px-3 py-2 text-sm">
+            <option value="">All countries</option>
+            <option value="MT" {{ 'selected' if country == 'MT' }}>Malta</option>
+            <option value="BG" {{ 'selected' if country == 'BG' }}>Bulgaria</option>
+        </select>
+        <button type="submit" class="rounded bg-blue-600 text-white px-6 py-2 text-sm hover:bg-blue-700">Search</button>
+    </div>
+</form>
+
+{% if q %}
+<p class="text-sm text-gray-500 mb-4">{{ total }} result(s) for "{{ q }}"{% if total > 100 %} (showing first 100){% endif %}</p>
+
+<div class="space-y-3">
+    {% for r in results %}
+    {% set c = r.doc.current %}
+    <a href="/property/{{ r.collection }}/{{ r.doc._id.split(':',1)[1] }}" class="bg-white rounded-lg border p-4 flex gap-4 hover:shadow-md transition-shadow block">
+        <!-- Thumb -->
+        {% if c.image_local_paths and c.image_local_paths[0] %}
+        <div class="w-32 h-24 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+            <img src="/image{{ c.image_local_paths[0] }}" alt="" class="w-full h-full object-cover" loading="lazy">
+        </div>
+        {% elif c.image_urls and c.image_urls[0] %}
+        <div class="w-32 h-24 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+            <img src="{{ c.image_urls[0] }}" alt="" class="w-full h-full object-cover" loading="lazy"
+                 onerror="this.style.display='none'">
+        </div>
+        {% endif %}
+
+        <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="font-semibold text-gray-900 truncate">{{ c.title or '—' }}</div>
+                    <div class="text-sm text-gray-500">{{ c.locality or c.address_raw or '—' }}</div>
+                </div>
+                <div class="text-right flex-shrink-0 ml-4">
+                    <div class="text-lg font-bold text-blue-600">{{ c.price_eur | eur }}</div>
+                    {% if c.area_sqm %}<div class="text-xs text-gray-500">{{ c.area_sqm | sqm }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="flex gap-2 mt-2 text-xs">
+                <span class="badge bg-gray-100 text-gray-600">{{ r.collection }}</span>
+                <span class="badge bg-gray-100 text-gray-600">{{ c.property_type or '?' }}</span>
+                {% if c.bedrooms %}<span class="text-gray-500">{{ c.bedrooms }} bed</span>{% endif %}
+                <span class="badge bg-blue-50 text-blue-600">{{ r.doc.country }}</span>
+            </div>
+            {% if c.description %}
+            <div class="text-xs text-gray-400 mt-1 truncate">{{ c.description[:150] }}</div>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% if not results and q %}
+<div class="text-center py-12 text-gray-500">No results found for "{{ q }}"</div>
+{% endif %}
+{% else %}
+<div class="text-center py-12 text-gray-400">Enter a search term to find properties</div>
+{% endif %}
+{% endblock %}

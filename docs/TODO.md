@@ -1,194 +1,119 @@
-# PriceMap - Issues & Remaining Work
+# PriceMap -- Issues & Remaining Work
 
-Audit performed 2026-04-06 after initial scaffolding and first scraping run.
+Updated 2026-04-06 after document store migration and scraper expansion.
 
 ---
 
-## Critical: Data Quality Gaps
+## Resolved Since Last Audit
+
+- ~~Scrape run tracking bug~~ -- Replaced SQLite with DocStore; auto-flush every 100 ops prevents data loss on kill.
+- ~~Pipeline vs scripts mismatch~~ -- Decision made: `scripts/` scrapers are the source of truth. `pipeline/` contains legacy stubs (can be removed).
+- ~~Too few properties (499)~~ -- Scraper caps removed. RE/MAX uncapped (32K available), MaltaPark paginates all pages, Imot.bg expanded to 35 cities.
+- ~~No history tracking~~ -- DocStore diffs tracked fields on every re-scrape. Price changes, description edits, deactivations recorded in embedded `history` array.
+- ~~SQLite schema rigidity~~ -- Migrated to schema-free JSONL document store. No ALTER TABLE ever needed.
+
+---
+
+## Data Quality Gaps
 
 ### BG_IMOT: 0% area and 0% coordinates
 
-121 Bulgarian properties scraped with prices, descriptions, images, and agent info
--- but **area_sqm and lat/lon are all NULL**.
+121 Bulgarian properties have prices, descriptions, images, agent info -- but **area_sqm and lat/lon are all NULL**.
 
-**Area**: The HTML parser in `scripts/scrape_imot_bg.py` (`parse_detail_page`, ~line 198)
-looks for `(\d+)\s*(?:m²|кв\.\s*м)` in `div.adParams` blocks. This regex doesn't match
-the common format where area is embedded in the description text
-(e.g. "З.П 47м2" or "65 кв.м" inside `div.info` on search results).
-The search results page `div.info` text already contains area -- parse it there as a
-fallback. Also try extracting from the JSON-LD `description` field which often has
-"65 кв.м" in it.
+**Area** (partially addressed): The Imot.bg scraper now tries to extract area from the search results `div.info` text as a fallback (`scrape_imot_bg.py`, `scrape_city` function). However, the regex may still miss some formats. Needs validation on a fresh scrape to see if area coverage improves.
 
-**Coordinates**: Imot.bg detail pages don't expose lat/lon in HTML or JSON-LD.
-Two options:
-1. Geocode the address string (quarter + city) via Nominatim. The geocoding pipeline
-   (`scripts/scraper_base.py`) doesn't do this currently -- add a batch geocoding step
-   after scraping.
-2. Some listings have a map section (`a[name="map"]`). Inspect whether clicking it
-   loads coordinates via AJAX that could be intercepted.
+**Coordinates**: Imot.bg doesn't expose lat/lon in HTML or JSON-LD. Fix options:
+1. Batch geocode via Nominatim after scraping (address = quarter + city). Need to respect Nominatim's 1 req/sec limit.
+2. Inspect whether Imot.bg's map section loads coordinates via AJAX.
 
 ### MT_REMAX: 0% descriptions
 
-296 Malta properties from the RE/MAX JSON API have structured data (GPS, area,
-bedrooms, bathrooms) but the `Description` field comes back as an empty string from
-the list endpoint (`/api/properties?Take=100&Skip=N`).
+The RE/MAX list API endpoint returns empty `Description` fields. Fix: fetch individual property detail pages at `https://www.remax-malta.com/property-details/MLS-{mls}` or check if there's a `/api/properties/{id}` endpoint with full details.
 
-**Fix**: Fetch individual property detail pages at
-`https://www.remax-malta.com/property-details/MLS-{mls}` to get full descriptions.
-The API likely has a single-property endpoint too -- check `/api/properties/{id}`
-or `/api/property/{mls}`.
+### MT_MALTAPARK: Low area coverage
 
-### MT_MALTAPARK: 0% area
-
-82 Malta properties from MaltaPark have descriptions, images, and prices but no
-area_sqm. The detail page parser (`scripts/scrape_maltapark.py`, `parse_detail_page`)
-looks for "area", "size", or "sqm" labels in the property details list, but MaltaPark
-likely uses a different label or puts sqm info in the description text only.
-
-**Fix**: Also search the description text for patterns like `(\d+)\s*sq\.?\s*m` or
-`(\d+)\s*m²` as a fallback.
+MaltaPark's property detail pages don't consistently expose area in structured fields. The scraper now also searches the description text for sqm patterns, but coverage depends on sellers including it in free text.
 
 ---
 
-## High: Pipeline vs Scripts Mismatch
+## Backend PostGIS Dependency
 
-The Scrapy spiders in `pipeline/src/spiders/` are **placeholder stubs** written before
-we inspected the real websites. They do not match the actual site structures discovered
-during research. Meanwhile, the working scrapers live in `scripts/`.
+The production backend (`backend/src/`) requires PostgreSQL + PostGIS for spatial queries. Files affected:
 
-| Spider | Status | Issue |
-|--------|--------|-------|
-| `pipeline/src/spiders/mt_ppr.py` | Dead code | PPR is behind paid auth (React SPA). Spider yields nothing. |
-| `pipeline/src/spiders/mt_propertymarket.py` | Dead code | PropertyMarket returns 403. Selectors are placeholders. |
-| `pipeline/src/spiders/bg_imot.py` | Wrong selectors | Uses `a.lnk1`, `a.lnk2` -- real selectors are `div.item a.title.saveSlink`. |
+| File | PostGIS functions |
+|------|-------------------|
+| `models/property.py` | `Geometry("POINT")`, `postgresql_using="gist"` |
+| `models/country.py` | `Geometry("MULTIPOLYGON")` |
+| `models/valuation.py` | `JSONB` |
+| `ml/comparables.py` | `ST_Distance`, `ST_MakePoint`, `ST_DWithin` |
+| `ml/confidence.py` | `ST_DWithin`, `ST_MakePoint` |
+| `services/property_service.py` | `ST_MakeEnvelope`, `ST_Within` |
+| `services/stats_service.py` | `ST_AsGeoJSON` |
 
-**Decision needed**: Either update the Scrapy spiders to match reality (good for
-production scheduling with Celery/Airflow), or consolidate on the `scripts/` scrapers
-and remove the pipeline stubs.
+**Current workaround**: The dev dashboard (`scripts/dashboard/`) reads directly from DocStore and doesn't use the backend at all. The backend is for the production deployment with Docker Compose (PostgreSQL included).
 
-Working scrapers that should be the source of truth:
-- `scripts/scrape_remax_mt.py` -- RE/MAX JSON API, best Malta source
-- `scripts/scrape_maltapark.py` -- MaltaPark HTML, good Malta backup
-- `scripts/scrape_imot_bg.py` -- Imot.bg HTML + JSON-LD, Bulgaria source
+**To connect them**: Write `scripts/export_to_postgres.py` that reads from DocStore and upserts into PostgreSQL. This bridges scraping (file-based) and the production API (PostGIS).
 
 ---
 
-## High: Scrape Run Tracking Bug
+## Missing Alembic Migrations
 
-The `scrape_runs` table shows incorrect counts. Runs that scraped hundreds of
-properties report `items_scraped=0, items_new=0`:
-
-```
-mt_remax     running   scraped=0 new=0   (actual: 296 properties in DB)
-mt_maltapark running   scraped=0 new=0   (actual: 82 properties in DB)
-```
-
-**Root cause**: The RE/MAX and MaltaPark scrapers were killed by `timeout 300` before
-they could call `finish_scrape_run()` in their `finally` block. The scrape_run row was
-created at start but never updated with final counts.
-
-**Fixes**:
-1. Flush counts incrementally during scraping (e.g. update every 50 items) instead of
-   only at the end.
-2. Add a signal handler so `timeout`/SIGTERM triggers the finalize step.
-3. Mark orphaned "running" runs as "interrupted" on startup.
-
----
-
-## Medium: Backend PostGIS Dependency
-
-The backend code **requires PostgreSQL + PostGIS** for spatial queries but the current
-dev workflow uses **SQLite** (via `scripts/setup_db.py`). These two worlds are
-disconnected.
-
-### Files with PostGIS-only code
-
-| File | Functions used |
-|------|---------------|
-| `backend/src/models/property.py` | `Geometry("POINT")`, `postgresql_using="gist"` |
-| `backend/src/models/country.py` | `Geometry("MULTIPOLYGON")` |
-| `backend/src/models/valuation.py` | `JSONB` (PostgreSQL dialect) |
-| `backend/src/ml/comparables.py` | `ST_Distance`, `ST_MakePoint`, `ST_SetSRID`, `ST_DWithin` |
-| `backend/src/ml/confidence.py` | `ST_DWithin`, `ST_MakePoint`, `ST_SetSRID` |
-| `backend/src/services/property_service.py` | `ST_MakeEnvelope`, `ST_Within` |
-| `backend/src/services/stats_service.py` | `ST_AsGeoJSON` |
-
-**Decision needed**: The backend is designed for production with PostGIS (correct for
-deployment). But to run the API locally against the SQLite data, either:
-1. Add a SQLite-compatible code path using plain lat/lon math instead of PostGIS
-   functions (e.g. Haversine distance, bounding box with `WHERE lat BETWEEN ? AND ?`).
-2. Or require Docker Compose for local API development (PostgreSQL is already in
-   docker-compose.yml) and write a migration to load SQLite data into PostgreSQL.
-
-Option 2 is cleaner long-term. Option 1 is faster for dev iteration.
-
----
-
-## Medium: Missing Alembic Migrations
-
-`backend/alembic/versions/` is empty -- no migration files exist. The database schema
-is defined in SQLAlchemy models but never materialized via Alembic.
-
-**Fix**: Generate the initial migration:
+`backend/alembic/versions/` is empty. To generate:
 ```bash
-cd backend
-alembic revision --autogenerate -m "initial schema"
+docker compose up -d postgres
+cd backend && alembic revision --autogenerate -m "initial schema"
 ```
-
-This requires a running PostgreSQL instance (Alembic connects to the DB to diff).
-Run `docker compose up postgres` first.
 
 ---
 
-## Medium: Frontend Type Gaps
+## Frontend Type Gaps
 
-### Missing property types in TypeScript
-
-`frontend/src/lib/types.ts` line 73-79 defines `PropertyType` as:
-```
-apartment | house | villa | studio | maisonette | penthouse
-```
-
-The backend model (`backend/src/models/property.py`) also has `commercial` and `land`.
-The scrapers produce both types (20 commercial, 4 land in current data). If the API
-returns these, the frontend will accept them at runtime but TypeScript won't catch
-type errors.
-
-**Fix**: Add `"commercial" | "land"` to the frontend `PropertyType` union, and add
-them to `PROPERTY_TYPES` in `constants.ts` and the Zod schema in `PropertyForm.tsx`.
+`frontend/src/lib/types.ts` `PropertyType` union is missing `"commercial"` and `"land"` which the scrapers produce. Add them to the union, `PROPERTY_TYPES` constant, and the Zod schema.
 
 ---
 
-## Low: PropertyMarket.com.mt Blocked
+## Blocked Data Sources
 
-The biggest Malta portal (38K listings) returns **403 Forbidden** for all HTTP
-requests to listing/search pages. The homepage returns 200 but property pages are
-blocked.
+| Site | Status | Fix |
+|------|--------|-----|
+| PropertyMarket.com.mt | 403 on all listing pages | Needs Playwright or residential proxies |
+| Frank Salt | 403 (Cloudflare WAF) | Needs Playwright with stealth |
+| Dhalia | Cloudflare managed challenge | Needs Playwright with stealth |
+| Malta PPR | Behind paid auth (React SPA) | Requires subscription account |
 
-Same for **Frank Salt** (403) and **Dhalia** (Cloudflare challenge).
-
-**Options**:
-1. Use `scrapy-playwright` or `playwright` to render pages with a real browser.
-2. Rotate residential proxies.
-3. Accept that RE/MAX API (32K listings) + MaltaPark (4K listings) cover most of the
-   Malta market.
-
-Option 3 is pragmatic for MVP. Option 1 for completeness later.
+**Pragmatic stance**: RE/MAX API (32K) + MaltaPark (4K) cover most of the Malta market. PropertyMarket can be added later with Playwright.
 
 ---
 
-## Low: No Integration Tests
+## Phase 2 Countries
 
-Only 3 unit tests exist (`backend/tests/test_ml/test_features.py`). No tests for:
-- API endpoints (FastAPI TestClient)
-- Database operations (SQLAlchemy with test DB)
-- Scraper parsing (feed sample HTML, verify output)
-- Frontend components (React Testing Library)
+Cyprus and Croatia scrapers not yet built. Research complete in `docs/research/`.
 
-**Minimum useful additions**:
-- Test `parse_detail_page()` in each scraper with saved HTML fixtures.
-- Test `/api/v1/health` endpoint.
-- Test `ValuationRequest` schema validation.
+| Country | Primary Target | Notes |
+|---------|---------------|-------|
+| Cyprus | Bazaraki.com | Apify scraper exists; Greek address transliteration needed |
+| Croatia | Nekretnine.hr | Has price data page; anti-scraping on Njuskalo |
+
+---
+
+## Testing
+
+Only 3 unit tests exist (`backend/tests/test_ml/test_features.py`). Needed:
+
+- Scraper parsing tests with saved HTML fixtures
+- DocStore unit tests (save, diff, history, flush/reload)
+- Dashboard route tests
+- Backend API endpoint tests (requires PostgreSQL)
+
+---
+
+## Legacy Code to Clean Up
+
+The `pipeline/` directory contains Scrapy spider stubs that were written before we inspected the actual websites. They don't work and aren't used. Options:
+1. Delete the directory entirely (scrapers live in `scripts/`)
+2. Port the working `scripts/` scrapers to Scrapy format (useful if we want Celery/Airflow scheduling later)
+
+The `scripts/setup_db.py` and `scripts/scrape_propertymarket_mt.py` are legacy SQLite-era code. The SQLite DB (`data/pricemap.db`) is kept as an archive but isn't used by anything.
 
 ---
 
@@ -196,12 +121,12 @@ Only 3 unit tests exist (`backend/tests/test_ml/test_features.py`). No tests for
 
 | Priority | Issue | Effort |
 |----------|-------|--------|
-| Critical | BG_IMOT missing area + coordinates | ~2h (improve parsing + add geocoding) |
-| Critical | MT_REMAX missing descriptions | ~1h (fetch detail pages or single-property API) |
-| High | Pipeline spiders are dead code | ~1h (delete or update) |
-| High | Scrape run tracking bug | ~30m (incremental flush) |
-| Medium | Backend requires PostGIS, dev uses SQLite | ~3h (add SQLite code path or Docker workflow) |
+| High | BG_IMOT missing area + coordinates | ~2h (improve area regex, add batch geocoding) |
+| High | MT_REMAX missing descriptions | ~1h (fetch detail pages or single-property API) |
+| Medium | No export_to_postgres bridge | ~2h (read DocStore, upsert to PostgreSQL) |
 | Medium | No Alembic migrations | ~30m (autogenerate from models) |
 | Medium | Frontend missing commercial/land types | ~15m |
-| Low | PropertyMarket.com.mt blocked | Deferred (RE/MAX covers market) |
-| Low | No integration tests | ~4h |
+| Low | Phase 2 country scrapers (CY, HR) | ~1 day each |
+| Low | PropertyMarket.com.mt (403 blocked) | ~2h with Playwright |
+| Low | Legacy pipeline/ cleanup | ~30m |
+| Low | Integration tests | ~4h |

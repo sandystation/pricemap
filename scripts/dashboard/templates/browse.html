@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ collection }} — Browse{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold">{{ collection }} <span class="text-gray-400 text-lg font-normal">({{ total }} properties)</span></h1>
+</div>
+
+<!-- Filters -->
+<form method="get" class="bg-white rounded-lg border p-4 mb-6 flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+        <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
+        <input type="text" name="q" value="{{ q }}" placeholder="Address, locality, title..." class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400">
+    </div>
+    <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Type</label>
+        <select name="prop_type" class="rounded border border-gray-300 px-3 py-1.5 text-sm">
+            <option value="">All types</option>
+            {% for t in prop_types %}
+            <option value="{{ t }}" {{ 'selected' if t == prop_type }}>{{ t }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Min price</label>
+        <input type="number" name="min_price" value="{{ min_price if min_price > 0 else '' }}" placeholder="0" class="w-28 rounded border border-gray-300 px-3 py-1.5 text-sm">
+    </div>
+    <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Max price</label>
+        <input type="number" name="max_price" value="{{ max_price if max_price > 0 else '' }}" placeholder="Any" class="w-28 rounded border border-gray-300 px-3 py-1.5 text-sm">
+    </div>
+    <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Sort</label>
+        <select name="sort" class="rounded border border-gray-300 px-3 py-1.5 text-sm">
+            <option value="newest" {{ 'selected' if sort == 'newest' }}>Newest</option>
+            <option value="price_asc" {{ 'selected' if sort == 'price_asc' }}>Price: Low→High</option>
+            <option value="price_desc" {{ 'selected' if sort == 'price_desc' }}>Price: High→Low</option>
+            <option value="area_desc" {{ 'selected' if sort == 'area_desc' }}>Area: Largest</option>
+        </select>
+    </div>
+    <button type="submit" class="rounded bg-blue-600 text-white px-4 py-1.5 text-sm hover:bg-blue-700">Filter</button>
+    {% if q or prop_type or min_price > 0 or max_price > 0 %}
+    <a href="/browse/{{ collection }}" class="text-sm text-gray-500 hover:text-gray-700 underline">Clear</a>
+    {% endif %}
+</form>
+
+<!-- Property Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+    {% for doc in docs %}
+    {% set c = doc.current %}
+    <a href="/property/{{ collection }}/{{ doc._id.split(':',1)[1] }}" class="bg-white rounded-lg border overflow-hidden hover:shadow-md transition-shadow block">
+        <!-- Image -->
+        {% if c.image_local_paths and c.image_local_paths[0] %}
+        <div class="h-40 bg-gray-100 overflow-hidden">
+            <img src="/image{{ c.image_local_paths[0] }}" alt="" class="w-full h-full object-cover" loading="lazy"
+                 onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-gray-400 text-sm\'>No image</div>'">
+        </div>
+        {% elif c.image_urls and c.image_urls[0] %}
+        <div class="h-40 bg-gray-100 overflow-hidden">
+            <img src="{{ c.image_urls[0] }}" alt="" class="w-full h-full object-cover" loading="lazy"
+                 onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-gray-400 text-sm\'>No image</div>'">
+        </div>
+        {% else %}
+        <div class="h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">No image</div>
+        {% endif %}
+
+        <div class="p-3">
+            <div class="flex justify-between items-start gap-2">
+                <div class="text-lg font-bold text-blue-600">{{ c.price_eur | eur }}</div>
+                {% if c.area_sqm %}
+                <div class="text-xs text-gray-500">{{ c.area_sqm | sqm }}</div>
+                {% endif %}
+            </div>
+            <div class="text-sm font-medium text-gray-900 mt-1 truncate">{{ c.title or '—' }}</div>
+            <div class="text-xs text-gray-500 mt-1">
+                {% if c.locality %}{{ c.locality }}{% endif %}
+                {% if c.bedrooms %} · {{ c.bedrooms }} bed{% endif %}
+                {% if c.bathrooms %} · {{ c.bathrooms }} bath{% endif %}
+            </div>
+            <div class="flex justify-between items-center mt-2 text-xs text-gray-400">
+                <span class="badge bg-gray-100 text-gray-600">{{ c.property_type or '?' }}</span>
+                <span>{{ doc.last_seen | time_ago }}</span>
+            </div>
+            {% if doc.history | length > 1 %}
+            <div class="mt-1 text-xs text-orange-600">{{ doc.history | length - 1 }} change(s)</div>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% if total == 0 %}
+<div class="text-center py-12 text-gray-500">No properties match your filters.</div>
+{% endif %}
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div class="flex justify-center gap-2 mb-8">
+    {% if page > 1 %}
+    <a href="?page={{ page-1 }}&sort={{ sort }}&q={{ q }}&prop_type={{ prop_type }}&min_price={{ min_price }}&max_price={{ max_price }}" class="px-3 py-1 rounded border text-sm hover:bg-gray-100">&laquo; Prev</a>
+    {% endif %}
+    <span class="px-3 py-1 text-sm text-gray-600">Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="?page={{ page+1 }}&sort={{ sort }}&q={{ q }}&prop_type={{ prop_type }}&min_price={{ min_price }}&max_price={{ max_price }}" class="px-3 py-1 rounded border text-sm hover:bg-gray-100">Next &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -6,15 +6,13 @@ Pagination: Take=100&Skip=N
 No auth required. Returns structured JSON with all fields.
 """
 
-import json
 import logging
 import time
 
 import httpx
 
 from scraper_base import (
-    get_db,
-    save_property,
+    get_store,
     download_images,
     start_scrape_run,
     finish_scrape_run,
@@ -24,8 +22,7 @@ logger = logging.getLogger("remax_mt")
 
 API_BASE = "https://www.remax-malta.com/api/properties"
 BATCH_SIZE = 100
-MAX_LISTINGS = 500  # Limit for initial scrape
-DELAY = 1.5
+DELAY = 2.0
 
 TYPE_MAP = {
     "Apartment": "apartment",
@@ -58,7 +55,6 @@ def fetch_batch(client: httpx.Client, skip: int) -> dict:
     resp = client.get(API_BASE, params=params)
     resp.raise_for_status()
     wrapper = resp.json()
-    # API returns {"data": {"Properties": [...], "TotalSearchResults": N}, "status_code": 200}
     inner = wrapper.get("data", wrapper)
     return inner
 
@@ -77,21 +73,17 @@ def process_property(item: dict) -> dict:
     except (ValueError, TypeError):
         area = None
 
-    # Build image URLs
     image_url = item.get("Image")
     image_urls = []
     if image_url:
-        # Convert thumbnail to higher res
         if "width_" in image_url:
             high_res = image_url.replace("width_600", "width_1200")
             image_urls.append(high_res)
         image_urls.append(image_url)
 
-    # Map property type
     raw_type = item.get("PropertyType", "")
     prop_type = TYPE_MAP.get(raw_type, "apartment")
 
-    # Build address
     parts = [p for p in [item.get("Zone"), item.get("Town"), item.get("Province")] if p]
     address = ", ".join(parts)
 
@@ -123,26 +115,22 @@ def process_property(item: dict) -> dict:
         "price_adjusted_eur": round(float(price) * 0.97, 2) if price else None,
         "has_garage": 1 if item.get("PropertyIncludesGarage") else 0,
         "listing_date": item.get("InsertionDate"),
-        "agent_name": None,
         "image_urls": image_urls,
         "image_local_paths": [],
-        "raw_json": {
-            "mls": item.get("MLS"),
-            "status": item.get("Status"),
-            "availability": item.get("AvailabilityText"),
-            "total_int_area": item.get("TotalIntArea"),
-            "total_ext_area": item.get("TotalExtArea"),
-            "score": item.get("Score"),
-            "last_modified": item.get("LastModified"),
-            "zone": item.get("Zone"),
-            "province": item.get("Province"),
-            "garage_type": item.get("GarageType"),
-        },
+        "raw_type": raw_type,
+        "status": item.get("Status"),
+        "availability": item.get("AvailabilityText"),
+        "total_int_area": item.get("TotalIntArea"),
+        "total_ext_area": item.get("TotalExtArea"),
+        "zone": item.get("Zone"),
+        "province": item.get("Province"),
+        "last_modified": item.get("LastModified"),
     }
 
 
 def main():
-    conn = get_db()
+    store = get_store()
+    coll = store.collection("mt_remax")
     client = httpx.Client(
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -153,14 +141,15 @@ def main():
         follow_redirects=True,
     )
 
-    run_id = start_scrape_run(conn, "mt_remax", "MT")
+    run_id = start_scrape_run(store, "mt_remax", "MT")
     total_scraped = 0
     total_new = 0
     total_errors = 0
+    total_available = None
 
     try:
         skip = 0
-        while skip < MAX_LISTINGS:
+        while True:
             logger.info(f"Fetching batch: skip={skip}, take={BATCH_SIZE}")
             try:
                 data = fetch_batch(client, skip)
@@ -169,39 +158,37 @@ def main():
                 total_errors += 1
                 break
 
-            items = data.get("Properties", data.get("Items", data.get("items", [])))
+            items = data.get("Properties", [])
             if not items:
                 logger.info("No more items, stopping")
                 break
 
-            total_available = (
-                data.get("TotalSearchResults", 0)
-                if isinstance(data, dict)
-                else len(items)
-            )
-            logger.info(f"Got {len(items)} items (total available: {total_available})")
+            if total_available is None:
+                total_available = data.get("TotalSearchResults", 0)
+                logger.info(f"Total available from API: {total_available}")
+
+            logger.info(f"Got {len(items)} items (skip={skip}/{total_available})")
 
             for item in items:
                 try:
                     record = process_property(item)
 
-                    # Download images
                     if record["image_urls"]:
                         record["image_local_paths"] = download_images(
                             client,
                             record["image_urls"],
                             "mt_remax",
                             record["external_id"],
-                            max_images=3,
+                            max_images=2,
                         )
 
-                    prop_id, is_new = save_property(conn, record)
+                    doc_id, is_new = coll.save_property(record)
                     total_scraped += 1
                     if is_new:
                         total_new += 1
-                        if total_new <= 20 or total_new % 50 == 0:
+                        if total_new <= 20 or total_new % 100 == 0:
                             logger.info(
-                                f"  NEW #{prop_id}: {record['title'][:50]} | "
+                                f"  NEW {doc_id}: {record['title'][:50]} | "
                                 f"{record.get('price_eur')} EUR | "
                                 f"{record.get('locality')}"
                             )
@@ -210,12 +197,16 @@ def main():
                     total_errors += 1
 
             skip += BATCH_SIZE
+            if total_available and skip >= total_available:
+                logger.info(f"Reached end: {skip} >= {total_available}")
+                break
             time.sleep(DELAY)
 
     finally:
-        finish_scrape_run(conn, run_id, total_scraped, total_new, total_errors)
+        finish_scrape_run(store, run_id, total_scraped, total_new, total_errors)
+        coll.close()
         client.close()
-        conn.close()
+        store.close()
 
     logger.info(f"\nDONE: {total_scraped} total, {total_new} new, {total_errors} errors")
 
