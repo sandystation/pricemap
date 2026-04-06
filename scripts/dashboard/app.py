@@ -40,21 +40,21 @@ def get_store():
 # --- Jinja2 filters ---
 
 def format_eur(value):
-    if value is None:
+    if value is None or (hasattr(value, '_undefined_name')):
         return "—"
     try:
         return f"€{float(value):,.0f}"
     except (ValueError, TypeError):
-        return str(value)
+        return "—"
 
 
 def format_sqm(value):
-    if value is None:
+    if value is None or (hasattr(value, '_undefined_name')):
         return "—"
     try:
         return f"{float(value):,.0f} m²"
     except (ValueError, TypeError):
-        return str(value)
+        return "—"
 
 
 def time_ago(value):
@@ -122,12 +122,22 @@ async def browse(
     sort: str = Query("newest"),
     q: str = Query(""),
     prop_type: str = Query(""),
-    min_price: float = Query(0),
-    max_price: float = Query(0),
+    min_price: str = Query(""),
+    max_price: str = Query(""),
 ):
     store = get_store()
     coll = store.collection(collection)
     docs = coll.find()
+
+    # Parse price filters (empty string = no filter)
+    try:
+        min_price_f = float(min_price) if min_price else 0
+    except ValueError:
+        min_price_f = 0
+    try:
+        max_price_f = float(max_price) if max_price else 0
+    except ValueError:
+        max_price_f = 0
 
     # Filter
     if q:
@@ -141,11 +151,11 @@ async def browse(
     if prop_type:
         docs = [d for d in docs if d["current"].get("property_type") == prop_type]
 
-    if min_price > 0:
-        docs = [d for d in docs if (d["current"].get("price_eur") or 0) >= min_price]
+    if min_price_f > 0:
+        docs = [d for d in docs if (d["current"].get("price_eur") or 0) >= min_price_f]
 
-    if max_price > 0:
-        docs = [d for d in docs if (d["current"].get("price_eur") or float("inf")) <= max_price]
+    if max_price_f > 0:
+        docs = [d for d in docs if (d["current"].get("price_eur") or float("inf")) <= max_price_f]
 
     # Sort
     if sort == "price_asc":
@@ -178,8 +188,8 @@ async def browse(
         "q": q,
         "prop_type": prop_type,
         "prop_types": prop_types,
-        "min_price": min_price,
-        "max_price": max_price,
+        "min_price": min_price_f,
+        "max_price": max_price_f,
     })
 
 

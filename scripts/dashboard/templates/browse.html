@@ -46,7 +46,7 @@
 <!-- Property Grid -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
     {% for doc in docs %}
-    {% set c = doc.current %}
+    {% set c = doc["current"] %}
     <a href="/property/{{ collection }}/{{ doc._id.split(':',1)[1] }}" class="bg-white rounded-lg border overflow-hidden hover:shadow-md transition-shadow block">
         <!-- Image -->
         {% if c.image_local_paths and c.image_local_paths[0] %}

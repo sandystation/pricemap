@@ -134,18 +134,13 @@ class Collection:
                 # Record history event
                 event = _build_event(now, changes)
                 existing.setdefault("history", []).append(event)
-
-                # Update current with all new data
-                for k, v in current_data.items():
-                    if v is not None:
-                        existing["current"][k] = v
-
                 logger.debug(f"Updated {doc_id}: {event['event']} ({len(changes)} fields)")
-            else:
-                # No tracked changes, but still update non-tracked fields
-                for k, v in current_data.items():
-                    if k not in TRACKED_FIELDS and v is not None:
-                        existing["current"][k] = v
+
+            # Always update current with all non-None incoming data
+            # (fills in new fields, updates non-tracked fields, applies tracked changes)
+            for k, v in current_data.items():
+                if v is not None:
+                    existing["current"][k] = v
 
             self._docs[doc_id] = existing
             self._mark_dirty()
