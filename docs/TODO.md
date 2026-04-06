@@ -18,23 +18,53 @@ Updated 2026-04-06 after document store migration and scraper expansion.
 
 ### RE/MAX missing property type mappings
 
-The RE/MAX API returns property types like `"Land"`, `"Land for Development"`, `"Agriculture Land"`, `"Garage (Residential)"`, `"Restaurant"`, `"Bar"`, `"Warehouse"` that were not in the `TYPE_MAP` dict. These all fell through to `"apartment"` as the default.
+The RE/MAX API returns 70+ distinct property types but only 24 were in the `TYPE_MAP`. Everything unmapped defaulted to `"apartment"`, misclassifying ~3,700 listings (garages, offices, villas, land, etc. all shown as apartments).
 
-**Fixed** for new scrapes in `scrape_remax_mt.py` — added all missing types. But **existing docs scraped before the fix still have wrong types**. Need a one-time cleanup:
+**Scraper code fixed** (2026-04-06):
+- `scrape_remax_mt.py`: `TYPE_MAP` expanded from 24 → 88 entries. Added `"parking"` category. Default → `"other"` with warning log.
+- `scrape_maltapark.py`: Same fixes — expanded TYPE_MAP, default → `"other"`.
+
+**Data not fully fixed** — both scrapers were still running when the code was changed. A partial fix was applied to `mt_remax.jsonl` (3,715 docs corrected), but docs scraped after that by the still-running old-code process will have wrong types again. Run this for **both** collections after their scrapers finish:
 
 ```python
-# Run after the current RE/MAX scrape finishes to re-type existing docs:
-# Check how many docs have property_type mismatch with their raw_type field
+# Fix mt_remax
+from scrape_remax_mt import TYPE_MAP as REMAX_MAP
 from docstore import DocStore
-s = DocStore()
-c = s.collection("mt_remax")
-for doc in c.find():
-    raw = doc["current"].get("raw_type", "")
-    if raw in ("Land", "Land for Development", "Agriculture Land") and doc["current"].get("property_type") == "apartment":
-        doc["current"]["property_type"] = "land"
-        c.put(doc)
-    # similar for Garage (Residential), Restaurant, Bar, Warehouse → commercial
-c.flush()
+store = DocStore()
+c = store.collection("mt_remax")
+c._ensure_loaded()
+fixed = 0
+for doc in c._docs.values():
+    raw = doc.get("current", {}).get("raw_type", "")
+    old_pt = doc.get("current", {}).get("property_type", "")
+    new_pt = REMAX_MAP.get(raw, "other")
+    if old_pt != new_pt:
+        doc["current"]["property_type"] = new_pt
+        fixed += 1
+if fixed:
+    c._dirty = True
+    c.flush()
+print(f"mt_remax: fixed {fixed} documents")
+store.close()
+
+# Fix mt_maltapark
+from scrape_maltapark import TYPE_MAP as MP_MAP
+store = DocStore()
+c = store.collection("mt_maltapark")
+c._ensure_loaded()
+fixed = 0
+for doc in c._docs.values():
+    raw = doc.get("current", {}).get("property_type_raw", "")
+    old_pt = doc.get("current", {}).get("property_type", "")
+    new_pt = MP_MAP.get(raw.lower(), "other")
+    if old_pt != new_pt:
+        doc["current"]["property_type"] = new_pt
+        fixed += 1
+if fixed:
+    c._dirty = True
+    c.flush()
+print(f"mt_maltapark: fixed {fixed} documents")
+store.close()
 ```
 
 ### MaltaPark garbage prices (phone numbers parsed as prices)
@@ -167,7 +197,7 @@ The `scripts/setup_db.py` and `scripts/scrape_propertymarket_mt.py` are legacy S
 |----------|-------|--------|
 | High | BG_IMOT missing area + coordinates | ~2h (improve area regex, add batch geocoding) |
 | High | MT_REMAX missing descriptions | ~1h (fetch detail pages or single-property API) |
-| High | Clean up RE/MAX docs with wrong property_type from before the fix | ~15m (script in TODO above) |
+| High | Fix property_type in mt_remax + mt_maltapark data (after scrapers finish) | ~5m (script in TODO above) |
 | Medium | MaltaPark price validation (phone numbers as prices) | ~1h (smarter validation: price/sqm ratio, locality median comparison) |
 | Medium | No export_to_postgres bridge | ~2h (read DocStore, upsert to PostgreSQL) |
 | Medium | No Alembic migrations | ~30m (autogenerate from models) |

@@ -25,23 +25,96 @@ BATCH_SIZE = 100
 DELAY = 2.0
 
 TYPE_MAP = {
+    # Apartments
     "Apartment": "apartment",
+    "Apartment Duplex": "apartment",
+    "Block Of Apartments": "apartment",
+    "FlatLet": "apartment",
+    "Serviced Apartment": "apartment",
+    # Penthouses
     "Penthouse": "penthouse",
+    "Penthouse Duplex": "penthouse",
+    "Penthouse Triplex": "penthouse",
+    "Sky Villa": "penthouse",
+    # Maisonettes
     "Maisonette": "maisonette",
+    "Maisonette Duplex": "maisonette",
+    "Maisonette Semi-detached": "maisonette",
+    "Maisonette Solitary": "maisonette",
+    "Maisonette Solitary Duplex": "maisonette",
+    "Maisonette Solitary Triplex": "maisonette",
+    # Villas
     "Villa": "villa",
+    "Villa Semi-detached": "villa",
+    "Villa Detached": "villa",
+    # Houses
     "Terraced House": "house",
     "Semi-Detached Villa": "house",
     "Townhouse": "house",
     "House of Character": "house",
     "Bungalow": "house",
+    "Bungalow Detached": "house",
+    "Bungalow Semi-detached": "house",
     "Palazzo": "house",
+    "Palazzino": "house",
     "Farmhouse": "house",
+    "Cottage": "house",
+    "Guest House": "house",
+    # Studios
     "Studio": "studio",
-    "Duplex": "apartment",
-    "Garage": "commercial",
+    "Studio Flat": "studio",
+    "Room": "studio",
+    # Parking / garages
+    "Garage": "parking",
+    "Garage (Residential)": "parking",
+    "Garage (Commercial)": "parking",
+    "Car Space": "parking",
+    "Boathouse": "parking",
+    "Parking Lot": "parking",
+    # Commercial
     "Office": "commercial",
+    "Office Space": "commercial",
+    "Office Block": "commercial",
+    "Managed Office": "commercial",
     "Shop": "commercial",
+    "Showroom": "commercial",
+    "Shopping Mall": "commercial",
+    "Outlet Mall": "commercial",
+    "Restaurant": "commercial",
+    "Cafe": "commercial",
+    "Bar": "commercial",
+    "Pub": "commercial",
+    "Take Away": "commercial",
+    "Warehouse": "commercial",
+    "Warehouse with Office Space": "commercial",
+    "Factory": "commercial",
+    "Industrial Estate Building": "commercial",
+    "Self Storage": "commercial",
+    "Salon/Hairdresser/Beautician": "commercial",
+    "Sale of Business": "commercial",
+    "Gymnasium": "commercial",
+    "Fitness Centre": "commercial",
+    "Rehabilitation Clinic": "commercial",
+    "Pharmacy": "commercial",
+    "School": "commercial",
+    "Hotel": "commercial",
+    "Boutique Hotel": "commercial",
+    "Hostel": "commercial",
+    "B&B": "commercial",
+    "Old people's/Nursing Home": "commercial",
+    "Gambling/Entertainment": "commercial",
+    "Hall": "commercial",
+    "Stables": "commercial",
+    "Building": "commercial",
+    # Land
     "Plot": "land",
+    "Land": "land",
+    "Land for Development": "land",
+    "Agriculture Land": "land",
+    "Site": "land",
+    "Site / Plot": "land",
+    "Airspace (Residential)": "land",
+    "Yard": "land",
 }
 
 
@@ -59,7 +132,7 @@ def fetch_batch(client: httpx.Client, skip: int) -> dict:
     return inner
 
 
-def process_property(item: dict) -> dict:
+def process_property(item: dict, raw_item: dict) -> dict:
     """Convert API response item to our property record format."""
     coords = item.get("Coordinates") or {}
     price_raw = item.get("Price")
@@ -82,7 +155,10 @@ def process_property(item: dict) -> dict:
         image_urls.append(image_url)
 
     raw_type = item.get("PropertyType", "")
-    prop_type = TYPE_MAP.get(raw_type, "apartment")
+    prop_type = TYPE_MAP.get(raw_type)
+    if prop_type is None:
+        logger.warning(f"Unknown property type: {raw_type!r}")
+        prop_type = "other"
 
     parts = [p for p in [item.get("Zone"), item.get("Town"), item.get("Province")] if p]
     address = ", ".join(parts)
@@ -125,6 +201,7 @@ def process_property(item: dict) -> dict:
         "zone": item.get("Zone"),
         "province": item.get("Province"),
         "last_modified": item.get("LastModified"),
+        "raw_data": raw_item,
     }
 
 
@@ -171,7 +248,7 @@ def main():
 
             for item in items:
                 try:
-                    record = process_property(item)
+                    record = process_property(item, raw_item=item)
 
                     if record["image_urls"]:
                         record["image_local_paths"] = download_images(

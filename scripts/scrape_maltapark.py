@@ -39,11 +39,19 @@ TYPE_MAP = {
     "house of character": "house",
     "bungalow": "house",
     "palazzo": "house",
+    "palazzino": "house",
     "farmhouse": "house",
+    "cottage": "house",
     "studio": "studio",
-    "garage": "commercial",
+    "garage": "parking",
+    "car space": "parking",
+    "office": "commercial",
+    "shop": "commercial",
+    "warehouse": "commercial",
+    "restaurant": "commercial",
     "plot": "land",
     "land": "land",
+    "site": "land",
 }
 
 
@@ -280,7 +288,9 @@ def main():
                 price = detail.get("price") or listing.get("price")
                 locality = detail.get("locality") or listing.get("locality")
                 raw_type = detail.get("property_type_raw") or listing.get("property_type", "")
-                prop_type = TYPE_MAP.get(raw_type.lower(), "apartment")
+                prop_type = TYPE_MAP.get(raw_type.lower(), "other")
+                if prop_type == "other":
+                    logger.warning(f"Unknown property type: {raw_type!r}")
                 bedrooms = detail.get("bedrooms")
                 if not bedrooms and listing.get("bedrooms"):
                     try:
@@ -321,6 +331,7 @@ def main():
                     "image_local_paths": [],
                     "property_type_raw": raw_type,
                     "condition_raw": detail.get("condition_raw"),
+                    "raw_data": {"listing": listing, "detail": detail},
                 }
 
                 if record["image_urls"]:

@@ -448,6 +448,7 @@ def scrape_city(client, coll, city_slug: str, city_name: str):
                 "search_info": listing.get("info_text"),
                 "amenities": detail.get("amenities_raw"),
                 "description_short": detail.get("description_short"),
+                "raw_data": {"listing": listing, "detail": detail},
             }
 
             doc_id, is_new = coll.save_property(record)
