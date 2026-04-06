@@ -14,6 +14,45 @@ Updated 2026-04-06 after document store migration and scraper expansion.
 
 ---
 
+## Data Quality: Bugs Found in Comprehensive Testing (2026-04-06)
+
+### RE/MAX missing property type mappings
+
+The RE/MAX API returns property types like `"Land"`, `"Land for Development"`, `"Agriculture Land"`, `"Garage (Residential)"`, `"Restaurant"`, `"Bar"`, `"Warehouse"` that were not in the `TYPE_MAP` dict. These all fell through to `"apartment"` as the default.
+
+**Fixed** for new scrapes in `scrape_remax_mt.py` — added all missing types. But **existing docs scraped before the fix still have wrong types**. Need a one-time cleanup:
+
+```python
+# Run after the current RE/MAX scrape finishes to re-type existing docs:
+# Check how many docs have property_type mismatch with their raw_type field
+from docstore import DocStore
+s = DocStore()
+c = s.collection("mt_remax")
+for doc in c.find():
+    raw = doc["current"].get("raw_type", "")
+    if raw in ("Land", "Land for Development", "Agriculture Land") and doc["current"].get("property_type") == "apartment":
+        doc["current"]["property_type"] = "land"
+        c.put(doc)
+    # similar for Garage (Residential), Restaurant, Bar, Warehouse → commercial
+c.flush()
+```
+
+### MaltaPark garbage prices (phone numbers parsed as prices)
+
+MaltaPark's price element sometimes contains phone numbers or reference IDs (e.g. €9,988,777,000 for a "Large Garage"). These are clearly not real prices — they're parsed from nearby text that leaks into the price field.
+
+Root cause: `parse_listing_page` uses a broad regex `[\d,]+` on the price span, which can pick up non-price numbers. The detail page parser has the same issue.
+
+**Not capped** — legitimate properties can exceed €50M (e.g. Malta development sites at €65M in RE/MAX). Instead, this needs smarter validation: flag prices where `price / area_sqm` exceeds a threshold (e.g. €100K/sqm), or where the price is 100x the locality median.
+
+### DocStore wasn't storing new field values on re-scrape
+
+When a property was re-scraped with a new field (e.g. `area_sqm` first appearing), the value was silently dropped if no tracked field had changed. This meant fields discovered on later scrapes were lost.
+
+**Fixed** in `docstore.py` — `save_property()` now always writes all non-None incoming values to `current`, regardless of whether tracked changes were detected.
+
+---
+
 ## Data Quality Gaps
 
 ### BG_IMOT: 0% area and 0% coordinates
@@ -98,12 +137,17 @@ Cyprus and Croatia scrapers not yet built. Research complete in `docs/research/`
 
 ## Testing
 
-Only 3 unit tests exist (`backend/tests/test_ml/test_features.py`). Needed:
+Tests exist in `scripts/test_dashboard.py` (35 Playwright e2e tests) and inline in the comprehensive bug hunt script. Summary of current coverage:
 
-- Scraper parsing tests with saved HTML fixtures
-- DocStore unit tests (save, diff, history, flush/reload)
-- Dashboard route tests
+- **DocStore engine**: 11 tests (create, reload, change detection, float tolerance, staleness, find, delete, auto-flush, corrupt line handling, diff correctness)
+- **Scraper parsers**: 7 tests (RE/MAX property processing, null handling, all type mappings; Imot.bg type/room detection; MaltaPark condition mapping, price validation)
+- **Live data integrity**: 7 tests (doc structure, no duplicate IDs, price validation, GPS bounds, image URLs, history events)
+- **Dashboard HTTP**: 27 tests (all routes, all filters, all sorts, pagination, XSS, 404s, empty collections, invalid params, Cyrillic search)
+- **Dashboard Playwright e2e**: 35 tests (browser-based: clicks, form submits, navigation, image loading)
+
+Still needed:
 - Backend API endpoint tests (requires PostgreSQL)
+- Scraper parsing tests with saved HTML fixtures (for regression when sites change)
 
 ---
 
@@ -123,10 +167,13 @@ The `scripts/setup_db.py` and `scripts/scrape_propertymarket_mt.py` are legacy S
 |----------|-------|--------|
 | High | BG_IMOT missing area + coordinates | ~2h (improve area regex, add batch geocoding) |
 | High | MT_REMAX missing descriptions | ~1h (fetch detail pages or single-property API) |
+| High | Clean up RE/MAX docs with wrong property_type from before the fix | ~15m (script in TODO above) |
+| Medium | MaltaPark price validation (phone numbers as prices) | ~1h (smarter validation: price/sqm ratio, locality median comparison) |
 | Medium | No export_to_postgres bridge | ~2h (read DocStore, upsert to PostgreSQL) |
 | Medium | No Alembic migrations | ~30m (autogenerate from models) |
 | Medium | Frontend missing commercial/land types | ~15m |
+| Medium | Add `listing_type` field (sale vs rent) to all scrapers | ~30m |
 | Low | Phase 2 country scrapers (CY, HR) | ~1 day each |
 | Low | PropertyMarket.com.mt (403 blocked) | ~2h with Playwright |
 | Low | Legacy pipeline/ cleanup | ~30m |
-| Low | Integration tests | ~4h |
+| Low | Backend API + HTML fixture tests | ~4h |

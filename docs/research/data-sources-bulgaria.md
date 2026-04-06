@@ -1,73 +1,92 @@
 # Bulgaria -- Data Sources
 
+## Tested & Working
+
+### Imot.bg (Primary — thousands of listings across 35 cities)
+- **URL**: `https://www.imot.bg/obiavi/prodazhbi/grad-{city-slug}`
+- **Method**: HTML scraping + JSON-LD structured data on detail pages
+- **Encoding**: `windows-1251` (not UTF-8) — must decode with `resp.encoding = "windows-1251"`
+- **Pagination**: `/p-{N}` suffix, 40 listings per page
+- **Search URL pattern**: `https://www.imot.bg/obiavi/prodazhbi/grad-{city}/p-{page}`
+- **Detail URL pattern**: `https://www.imot.bg/obiava-{id}-{slug}`
+- **CDN**: Behind Cloudflare, but accessible with standard headers and 2s delay
+
+#### HTML Structure (Search Results)
+- Listing container: `div.item` (regular) or `div.nova-sgrada` (new construction promo)
+- Title link: `a.title.saveSlink`
+- Price: `div.price div` — contains EUR and BGN on separate lines (e.g. "119 000 €\n232 743.77 лв.")
+- Info line: `div.info` — comma-separated: area, floor, construction type, amenities, phone
+- Images: `div.photo .big img.pic` (main), `div.photo .small img` (thumbnails)
+- Agency: `div.seller .name a` and `div.seller .location`
+- Price-up indicator: `div.price.UP`
+- Element ID: `div.item[id="ida{listing_id}"]`
+
+#### JSON-LD (Detail Pages — Best Structured Data)
+Each detail page has `<script type="application/ld+json">` with:
+```json
+{
+  "@type": "Offer",
+  "priceCurrency": "EUR",
+  "price": 119000,
+  "itemOffered": {
+    "@type": "Product",
+    "name": "...",
+    "description": "65 кв.м, Етажна 5, Тух.строит.",
+    "image": ["url1", "url2"],
+    "sku": "1b176839608204609"
+  },
+  "seller": {
+    "@type": "RealEstateAgent",
+    "name": "Агенция Name",
+    "url": "https://agency.imot.bg"
+  }
+}
+```
+
+#### Detail Page HTML Selectors
+- Parameters: `div.adParams div` — area, floor, construction type
+- Description: `div.moreInfo .text`
+- Amenities: `div.carExtri .items div`
+- Phone: `div.phone` or `div.dealer2023 .phone`
+- Agency: `div.dealer2023 .infoBox .name`
+- Images: `.owl-carousel img.carouselimg` with `data-src` (lazy loaded)
+- Publication date: `div.adPrice .info`
+
+#### Cities Scraped (35 total)
+**Major**: Sofia, Plovdiv, Varna, Burgas, Ruse, Stara Zagora
+**Medium**: Pleven, Sliven, Dobrich, Shumen, Blagoevgrad, Veliko Tarnovo, Vratsa, Gabrovo, Haskovo, Kardzhali, Kyustendil, Lovech, Montana, Pazardzhik, Pernik, Razgrad, Silistra, Smolyan, Targovishte, Vidin, Yambol
+**Resort/tourist**: Bansko, Sandanski, Pomorie, Nesebar, Sozopol, Sveti Vlas, Sunny Beach (`KK-slanchev-bryag`), Golden Sands (`KK-zlatni-pyasatsi`)
+
+URL slugs: cities use `grad-{name}`, resort complexes use `KK-{name}`.
+
+#### Known Issues
+- **Area extraction unreliable**: `div.adParams` often doesn't have area in a parseable format. Fallback: parse from `div.info` text on search results or from JSON-LD description
+- **No GPS coordinates**: Detail pages don't expose lat/lon in HTML or JSON-LD. Map section exists (`a[name="map"]`) but coordinates may be loaded via AJAX. Need batch geocoding via Nominatim
+- **Mixed listings**: Sales results page sometimes includes promoted rentals. Title contains "Дава под Наем" (For Rent) vs "Продава" (For Sale)
+- **Bulgarian property types**: 1-стаен=studio, 2/3/4-стаен=apartment, многостаен=apartment, мезонет=maisonette, къща=house, вила=villa, етаж от къща=house
+
+#### Agent/Contact Data
+- Agent name: 100% coverage
+- Agent company: 93% coverage
+- Agent phone: 100% coverage
+- Agent website URL: 93% coverage
+- No email (hidden behind contact forms)
+
 ## Official Government Data
 
-### National Statistical Institute (NSI)
-- **URL**: https://www.nsi.bg/en/content/13025/housing-price-statistics
-- **Data**: House Price Index (HPI) quarterly, new and existing dwellings
-- **Latest**: Q2 2025 -- new dwellings +14.88% YoY, existing +16.01% YoY
-- **Project**: "Real Estate Indicators" (started Oct 2020) improving HPI through cadastral data integration
-- **Coverage**: Regional data by major cities (Sofia, Plovdiv, Varna, Burgas)
-- **Metadata**: https://www.nsi.bg/en/metadata/house-price-index-hpi-227
+### NSI HPI
+- Quarterly, regional breakdown (Sofia, Plovdiv, Varna, Burgas)
+- FRED series: `QBGN628BIS`
+- Not yet imported into our system
 
 ### Bulgarian Cadastre (IKAR)
-- **URL**: https://kais.cadastre.bg/en
-- **Managed by**: Agency of Geodesy, Cartography and Cadastre
-- **Free access** to property information:
-  - Part A: identification number, type, boundaries, location, purpose
-  - Part B: ownership rights and related documents
-- Semantic and graphic data available where digitized
-- Electronic extracts available to third parties; official documents only to owners
+- Free access at `kais.cadastre.bg/en`
+- Property type, boundaries, ownership info
+- Not yet integrated
 
-### ECB / Eurostat / FRED Data
-- ECB Data Portal: residential property price indices for Bulgaria
-- FRED: https://fred.stlouisfed.org/series/QBGN628BIS (BIS data)
-- Long-run historical price series available
+## Data Quality Notes
 
-## Listing Portals
-
-### Imot.bg (Primary Target)
-- Largest and oldest real estate platform (since 2000)
-- Covers apartments, houses, land, offices, retail
-- **Scraping**: Multiple third-party services available (RealDataAPI, ScrapeIt, RetailScrape)
-- **Data points**: listings, prices, sqm, neighborhood, photos, sale history
-- **API**: No official API; web scraping required
-- **Priority**: HIGH -- most comprehensive listing data
-
-### Secondary Portals
-- **Homes.bg** -- top 5 Bulgarian RE portal
-- **OLX.bg** -- classifieds with property listings; Apify scraper available
-- **Imoti.net, Indomio.bg** -- smaller portals
-
-## Geocoding & Address Data
-
-### Resources
-- **GitHub**: github.com/yurukov/Bulgaria-geocoding -- standardized address formatting + GPS coordinates
-- **Address format**: PostGrid guide for Bulgarian address standardization
-- **Postcode mapping** data available
-
-## Data Quality
-
-### Asking vs Transaction Prices
-- **Gap**: Asking prices typically 5% above actual transaction prices
-- **Extended listings**: Overpriced homes see 8-10% discounts after market exposure
-- **Negotiation**: Sellers anchor high; buyers negotiate on condition, repairs, documentation
-
-### Official Data Cross-checks
-- NSI/Eurostat HPI cross-checked against BIS indices for consistency
-- Regional variations significant -- Sofia prices diverge from rural areas
-
-## Data Strategy for Bulgaria
-
-1. **Primary**: Scrape Imot.bg for listings (asking prices + property features)
-2. **Indices**: Import NSI HPI quarterly for market trend baseline
-3. **Cadastre**: Query IKAR for property characteristics where available
-4. **Spatial**: OpenStreetMap + Bulgaria-geocoding for location features
-5. **Adjustment**: Apply 0.92-0.95 asking-to-transaction factor (calibrate against HPI)
-6. **Currency**: BGN to EUR conversion (fixed rate: 1 EUR = 1.95583 BGN, Bulgaria joining eurozone)
-
-## Key Challenges
-- No public transaction-level data (unlike Malta's PPR)
-- Must rely on asking prices with statistical adjustment
-- Cyrillic addresses need transliteration for geocoding
-- Regional price variation is extreme (Sofia vs rural)
+- **Asking vs transaction gap**: ~5-10% (asking prices higher)
+- **Currency**: BGN to EUR fixed rate 1.95583 BGN/EUR (Bulgaria joining eurozone)
+- **Price ranges observed**: €61K–€1.35M (avg €174K across 121 initial properties)
+- **Regional variation**: Sofia significantly more expensive than other cities
