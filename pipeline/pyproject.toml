@@ -1,0 +1,26 @@
+[project]
+name = "pricemap-pipeline"
+version = "0.1.0"
+description = "Data ingestion pipeline for PriceMap - scrapers and importers"
+requires-python = ">=3.12"
+dependencies = [
+    "scrapy>=2.11.0",
+    "scrapy-playwright>=0.0.40",
+    "sqlalchemy>=2.0.30",
+    "psycopg2-binary>=2.9.9",
+    "geoalchemy2>=0.15.0",
+    "geopy>=2.4.0",
+    "httpx>=0.27.0",
+    "pandas>=2.2.0",
+    "thefuzz[speedup]>=0.22.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "ruff>=0.5.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"

@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+.next/
+out/
+.turbo/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Docker
+docker-compose.override.yml
+
+# ML artifacts
+ml/artifacts/*.joblib
+ml/artifacts/*.pkl
+backend/src/ml/models/*.joblib
+backend/src/ml/models/*.pkl
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Redis
+dump.rdb
+
+# Logs
+*.log
+logs/
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
+
+# Scrapy
+pipeline/.scrapy/
+
+# Postgres data (if mounted locally)
+pgdata/
