@@ -122,6 +122,7 @@ async def browse(
     sort: str = Query("newest"),
     q: str = Query(""),
     prop_type: str = Query(""),
+    listing_type: str = Query(""),
     min_price: str = Query(""),
     max_price: str = Query(""),
 ):
@@ -151,6 +152,9 @@ async def browse(
     if prop_type:
         docs = [d for d in docs if d["current"].get("property_type") == prop_type]
 
+    if listing_type:
+        docs = [d for d in docs if d["current"].get("listing_type") == listing_type]
+
     if min_price_f > 0:
         docs = [d for d in docs if (d["current"].get("price_eur") or 0) >= min_price_f]
 
@@ -167,9 +171,10 @@ async def browse(
     else:  # newest
         docs.sort(key=lambda d: d.get("last_seen") or "", reverse=True)
 
-    # Collect property types for filter dropdown
+    # Collect filter options from all docs
     all_docs = coll.find()
     prop_types = sorted(set(d["current"].get("property_type") for d in all_docs if d["current"].get("property_type")))
+    listing_types = sorted(set(d["current"].get("listing_type") for d in all_docs if d["current"].get("listing_type")))
 
     # Paginate
     per_page = 24
@@ -188,6 +193,8 @@ async def browse(
         "q": q,
         "prop_type": prop_type,
         "prop_types": prop_types,
+        "listing_type": listing_type,
+        "listing_types": listing_types,
         "min_price": min_price_f,
         "max_price": max_price_f,
     })

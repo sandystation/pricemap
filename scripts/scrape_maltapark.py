@@ -309,6 +309,7 @@ def main():
                     "address_raw": locality or "",
                     "locality": locality,
                     "property_type": prop_type,
+                    "listing_type": "sale",
                     "area_sqm": area,
                     "bedrooms": bedrooms,
                     "bathrooms": detail.get("bathrooms"),

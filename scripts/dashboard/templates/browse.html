@@ -12,6 +12,15 @@
         <input type="text" name="q" value="{{ q }}" placeholder="Address, locality, title..." class="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400">
     </div>
     <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Listing</label>
+        <select name="listing_type" class="rounded border border-gray-300 px-3 py-1.5 text-sm">
+            <option value="">Sale & Rent</option>
+            {% for t in listing_types %}
+            <option value="{{ t }}" {{ 'selected' if t == listing_type }}>{{ t | title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
         <label class="block text-xs font-medium text-gray-500 mb-1">Type</label>
         <select name="prop_type" class="rounded border border-gray-300 px-3 py-1.5 text-sm">
             <option value="">All types</option>
@@ -38,7 +47,7 @@
         </select>
     </div>
     <button type="submit" class="rounded bg-blue-600 text-white px-4 py-1.5 text-sm hover:bg-blue-700">Filter</button>
-    {% if q or prop_type or min_price > 0 or max_price > 0 %}
+    {% if q or prop_type or listing_type or min_price > 0 or max_price > 0 %}
     <a href="/browse/{{ collection }}" class="text-sm text-gray-500 hover:text-gray-700 underline">Clear</a>
     {% endif %}
 </form>
@@ -78,6 +87,7 @@
             </div>
             <div class="flex justify-between items-center mt-2 text-xs text-gray-400">
                 <span class="badge bg-gray-100 text-gray-600">{{ c.property_type or '?' }}</span>
+                {% if c.listing_type == 'rent' %}<span class="badge bg-amber-100 text-amber-700">rent</span>{% endif %}
                 <span>{{ doc.last_seen | time_ago }}</span>
             </div>
             {% if doc.history | length > 1 %}
@@ -96,11 +106,11 @@
 {% if total_pages > 1 %}
 <div class="flex justify-center gap-2 mb-8">
     {% if page > 1 %}
-    <a href="?page={{ page-1 }}&sort={{ sort }}&q={{ q }}&prop_type={{ prop_type }}&min_price={{ min_price }}&max_price={{ max_price }}" class="px-3 py-1 rounded border text-sm hover:bg-gray-100">&laquo; Prev</a>
+    <a href="?page={{ page-1 }}&sort={{ sort }}&q={{ q }}&prop_type={{ prop_type }}&listing_type={{ listing_type }}&min_price={{ min_price }}&max_price={{ max_price }}" class="px-3 py-1 rounded border text-sm hover:bg-gray-100">&laquo; Prev</a>
     {% endif %}
     <span class="px-3 py-1 text-sm text-gray-600">Page {{ page }} of {{ total_pages }}</span>
     {% if page < total_pages %}
-    <a href="?page={{ page+1 }}&sort={{ sort }}&q={{ q }}&prop_type={{ prop_type }}&min_price={{ min_price }}&max_price={{ max_price }}" class="px-3 py-1 rounded border text-sm hover:bg-gray-100">Next &raquo;</a>
+    <a href="?page={{ page+1 }}&sort={{ sort }}&q={{ q }}&prop_type={{ prop_type }}&listing_type={{ listing_type }}&min_price={{ min_price }}&max_price={{ max_price }}" class="px-3 py-1 rounded border text-sm hover:bg-gray-100">Next &raquo;</a>
     {% endif %}
 </div>
 {% endif %}

@@ -421,6 +421,7 @@ def scrape_city(client, coll, city_slug: str, city_name: str):
                 "locality": locality,
                 "city": city_name,
                 "property_type": prop_type,
+                "listing_type": "sale",
                 "area_sqm": detail.get("area_sqm"),
                 "floor": detail.get("floor"),
                 "total_floors": detail.get("total_floors"),

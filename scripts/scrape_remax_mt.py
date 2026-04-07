@@ -1,7 +1,7 @@
 """
 RE/MAX Malta scraper - JSON API, 32K+ listings with GPS coordinates.
 
-Endpoint: https://www.remax-malta.com/api/properties
+Endpoint: https://remax-malta.com/api/properties
 Pagination: Take=100&Skip=N
 No auth required. Returns structured JSON with all fields.
 """
@@ -20,7 +20,7 @@ from scraper_base import (
 
 logger = logging.getLogger("remax_mt")
 
-API_BASE = "https://www.remax-malta.com/api/properties"
+API_BASE = "https://remax-malta.com/api/properties"
 BATCH_SIZE = 100
 DELAY = 2.0
 
@@ -123,7 +123,7 @@ def fetch_batch(client: httpx.Client, skip: int) -> dict:
     params = {
         "Take": BATCH_SIZE,
         "Skip": skip,
-        "TransactionTypeId": 0,  # For Sale
+        "TransactionTypeId": 0,  # API ignores this; returns all types
     }
     resp = client.get(API_BASE, params=params)
     resp.raise_for_status()
@@ -160,14 +160,22 @@ def process_property(item: dict, raw_item: dict) -> dict:
         logger.warning(f"Unknown property type: {raw_type!r}")
         prop_type = "other"
 
+    tx_type = item.get("TransactionType", "")
+    if "rent" in tx_type.lower() or "short" in tx_type.lower():
+        listing_type = "rent"
+    else:
+        listing_type = "sale"
+
     parts = [p for p in [item.get("Zone"), item.get("Town"), item.get("Province")] if p]
     address = ", ".join(parts)
+
+    mls = item.get("MLS", "")
 
     return {
         "country_code": "MT",
         "source": "mt_remax",
-        "external_id": str(item.get("MLS") or item.get("Id")),
-        "url": f"https://www.remax-malta.com/property-details/MLS-{item.get('MLS', '')}",
+        "external_id": str(mls or item.get("Id")),
+        "url": f"https://remax-malta.com/listings/{mls}",
         "title": f"{raw_type} in {item.get('Town', 'Malta')}",
         "description": item.get("Description", ""),
         "address_raw": address,
@@ -175,6 +183,7 @@ def process_property(item: dict, raw_item: dict) -> dict:
         "lat": coords.get("lat"),
         "lon": coords.get("lon"),
         "property_type": prop_type,
+        "listing_type": listing_type,
         "area_sqm": float(area) if area else None,
         "rooms": item.get("TotalRooms"),
         "bedrooms": item.get("TotalBedrooms"),
@@ -212,7 +221,7 @@ def main():
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             "Accept": "application/json",
-            "Referer": "https://www.remax-malta.com/property-for-sale",
+            "Referer": "https://remax-malta.com/property-for-sale",
         },
         timeout=30.0,
         follow_redirects=True,

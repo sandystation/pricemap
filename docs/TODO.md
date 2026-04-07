@@ -85,19 +85,19 @@ When a property was re-scraped with a new field (e.g. `area_sqm` first appearing
 
 ## Data Quality Gaps
 
-### BG_IMOT: 0% area and 0% coordinates
+### BG_IMOT: 0% coordinates, 33% raw_data coverage
 
-121 Bulgarian properties have prices, descriptions, images, agent info -- but **area_sqm and lat/lon are all NULL**.
+5,677 Bulgarian properties. Area coverage improved to 97%. But **lat/lon are still all NULL** — Imot.bg doesn't expose coordinates in HTML or JSON-LD.
 
-**Area** (partially addressed): The Imot.bg scraper now tries to extract area from the search results `div.info` text as a fallback (`scrape_imot_bg.py`, `scrape_city` function). However, the regex may still miss some formats. Needs validation on a fresh scrape to see if area coverage improves.
-
-**Coordinates**: Imot.bg doesn't expose lat/lon in HTML or JSON-LD. Fix options:
+**Coordinates** fix options:
 1. Batch geocode via Nominatim after scraping (address = quarter + city). Need to respect Nominatim's 1 req/sec limit.
 2. Inspect whether Imot.bg's map section loads coordinates via AJAX.
 
-### MT_REMAX: 0% descriptions
+**raw_data coverage** is 33% — the scraper added `raw_data` only to docs it re-scraped (Ruse, Stara Zagora, partial Burgas). Sofia, Plovdiv, Varna still need a re-scrape after the 20h staleness window passes.
 
-The RE/MAX list API endpoint returns empty `Description` fields. Fix: fetch individual property detail pages at `https://www.remax-malta.com/property-details/MLS-{mls}` or check if there's a `/api/properties/{id}` endpoint with full details.
+### ~~MT_REMAX: 0% descriptions~~
+
+**Fixed** (2026-04-07): Detail API at `/api/properties/{MLS}` returns full descriptions, features, room dimensions, agent info, energy ratings, and all photos. Enrichment script `enrich_remax_mt.py` processed 32,014 docs (99% coverage). Also stores full detail API response as `raw_data_detail`.
 
 ### MT_MALTAPARK: Low area coverage
 
@@ -195,9 +195,9 @@ The `scripts/setup_db.py` and `scripts/scrape_propertymarket_mt.py` are legacy S
 
 | Priority | Issue | Effort |
 |----------|-------|--------|
-| High | BG_IMOT missing area + coordinates | ~2h (improve area regex, add batch geocoding) |
-| High | MT_REMAX missing descriptions | ~1h (fetch detail pages or single-property API) |
-| High | Fix property_type in mt_remax + mt_maltapark data (after scrapers finish) | ~5m (script in TODO above) |
+| High | BG_IMOT missing coordinates + 33% raw_data | ~2h (batch geocoding + re-scrape) |
+| High | ~~MT_REMAX missing descriptions~~ | **Done** (enrich_remax_mt.py, 99% coverage) |
+| High | ~~Fix property_type in mt_remax + mt_maltapark~~ | **Done** |
 | Medium | MaltaPark price validation (phone numbers as prices) | ~1h (smarter validation: price/sqm ratio, locality median comparison) |
 | Medium | No export_to_postgres bridge | ~2h (read DocStore, upsert to PostgreSQL) |
 | Medium | No Alembic migrations | ~30m (autogenerate from models) |
