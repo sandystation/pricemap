@@ -125,10 +125,15 @@ async def browse(
     listing_type: str = Query(""),
     min_price: str = Query(""),
     max_price: str = Query(""),
+    show_dupes: str = Query(""),
 ):
     store = get_store()
     coll = store.collection(collection)
     docs = coll.find()
+
+    # Hide duplicates by default
+    if not show_dupes:
+        docs = [d for d in docs if "duplicate_of" not in d.get("current", {})]
 
     # Parse price filters (empty string = no filter)
     try:

@@ -9,22 +9,13 @@
     <!-- Left: Images + Description -->
     <div class="lg:col-span-2 space-y-4">
         <!-- Images -->
-        {% if local_images %}
+        {% set images = current.all_image_urls or local_images or current.image_urls or [] %}
+        {% if images %}
         <div class="bg-white rounded-lg border overflow-hidden">
-            <div class="grid grid-cols-1 {% if local_images | length > 1 %}md:grid-cols-2{% endif %} gap-1">
-                {% for img in local_images %}
-                <div class="{% if loop.first and local_images | length > 1 %}md:col-span-2{% endif %} bg-gray-100">
-                    <img src="/image{{ img }}" alt="Photo {{ loop.index }}" class="w-full object-cover {% if loop.first %}max-h-[500px]{% else %}max-h-[250px]{% endif %}" loading="lazy">
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% elif current.image_urls %}
-        <div class="bg-white rounded-lg border overflow-hidden">
-            <div class="grid grid-cols-1 {% if current.image_urls | length > 1 %}md:grid-cols-2{% endif %} gap-1">
-                {% for url in current.image_urls[:6] %}
-                <div class="{% if loop.first and current.image_urls | length > 1 %}md:col-span-2{% endif %} bg-gray-100">
-                    <img src="{{ url }}" alt="Photo {{ loop.index }}" class="w-full object-cover {% if loop.first %}max-h-[500px]{% else %}max-h-[250px]{% endif %}" loading="lazy"
+            <div class="grid grid-cols-1 {% if images | length > 1 %}md:grid-cols-2{% endif %} gap-1">
+                {% for img in images %}
+                <div class="{% if loop.first and images | length > 1 %}md:col-span-2{% endif %} bg-gray-100">
+                    <img src="{% if img.startswith('/') %}/image{{ img }}{% else %}{{ img }}{% endif %}" alt="Photo {{ loop.index }}" class="w-full object-cover {% if loop.first %}max-h-[500px]{% else %}max-h-[250px]{% endif %}" loading="lazy"
                          onerror="this.style.display='none'">
                 </div>
                 {% endfor %}
@@ -40,12 +31,49 @@
         </div>
         {% endif %}
 
+        <!-- Features -->
+        {% if current.features %}
+        <div class="bg-white rounded-lg border p-5">
+            <h3 class="font-semibold mb-2">Features</h3>
+            <div class="flex flex-wrap gap-2">
+                {% for f in current.features %}
+                <span class="badge bg-blue-50 text-blue-700">{{ f }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Room Dimensions -->
+        {% if current.rooms_detail %}
+        <div class="bg-white rounded-lg border p-5">
+            <h3 class="font-semibold mb-2">Rooms</h3>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-xs text-gray-500 border-b">
+                        <th class="pb-1">Room</th>
+                        <th class="pb-1">Size</th>
+                        <th class="pb-1">W x L</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in current.rooms_detail %}
+                    <tr class="border-b border-gray-100">
+                        <td class="py-1">{{ r.description or r.type }}</td>
+                        <td class="py-1 text-gray-600">{% if r.size_sqm %}{{ r.size_sqm }} m²{% endif %}</td>
+                        <td class="py-1 text-gray-400 text-xs">{% if r.width and r.length %}{{ r.width }} x {{ r.length }}m{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
         <!-- All Parsed Data -->
         <div class="bg-white rounded-lg border p-5">
             <h3 class="font-semibold mb-3">All Parsed Data</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
                 {% for key, value in current.items() | sort %}
-                {% if value is not none and value != '' and value != [] and key not in ['description', 'image_urls', 'image_local_paths'] %}
+                {% if value is not none and value != '' and value != [] and key not in ['description', 'image_urls', 'image_local_paths', 'all_image_urls', 'raw_data', 'raw_data_detail', 'rooms_detail', 'features'] %}
                 <div class="flex justify-between py-1 border-b border-gray-100">
                     <span class="text-gray-500 font-mono text-xs">{{ key }}</span>
                     <span class="text-gray-900 text-right max-w-[60%] truncate" title="{{ value }}">
@@ -99,6 +127,7 @@
                 {% endif %}
                 {% endmacro %}
 
+                {{ detail_row("Listing", current.listing_type) }}
                 {{ detail_row("Type", current.property_type) }}
                 {{ detail_row("Area", current.area_sqm | sqm if current.area_sqm else None) }}
                 {{ detail_row("Bedrooms", current.bedrooms) }}
@@ -108,6 +137,9 @@
                 {{ detail_row("Year Built", current.year_built) }}
                 {{ detail_row("Condition", current.condition) }}
                 {{ detail_row("Construction", current.construction_type) }}
+                {{ detail_row("Energy Rating", current.energy_rating) }}
+                {{ detail_row("Plot Size", (current.plot_size_sqm | string ~ ' m²') if current.plot_size_sqm else None) }}
+                {{ detail_row("Roof", (current.roof_sqm | string ~ ' m²') if current.roof_sqm else None) }}
             </div>
 
             <!-- Amenities -->
@@ -158,8 +190,10 @@
             <h3 class="font-semibold mb-3">Agent</h3>
             <div class="text-sm space-y-1">
                 {% if current.agent_name %}<div class="font-medium">{{ current.agent_name }}</div>{% endif %}
+                {% if current.agent_office %}<div class="text-gray-600">{{ current.agent_office }}</div>{% endif %}
                 {% if current.agent_company %}<div class="text-gray-600">{{ current.agent_company }}</div>{% endif %}
                 {% if current.agent_phone %}<div class="text-gray-500">{{ current.agent_phone }}</div>{% endif %}
+                {% if current.agent_email %}<div class="text-gray-500 text-xs">{{ current.agent_email }}</div>{% endif %}
             </div>
         </div>
         {% endif %}
