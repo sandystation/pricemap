@@ -67,6 +67,12 @@ print(f"mt_maltapark: fixed {fixed} documents")
 store.close()
 ```
 
+### RE/MAX rental price period not shown
+
+Rental listings have a `Period` field from the API (Daily, Monthly, etc.) but we don't extract or display it. A daily rental at €25 shows as just "€25" in the dashboard with no indication it's per-day. Example: `240031025-14` is €25 **Daily**.
+
+Fix: extract `Period` from the API response into a `price_period` field in the scraper and enrichment script. Display it next to the price in the dashboard (e.g. "€25 /day", "€1,500 /month").
+
 ### MaltaPark garbage prices (phone numbers parsed as prices)
 
 MaltaPark's price element sometimes contains phone numbers or reference IDs (e.g. €9,988,777,000 for a "Large Garage"). These are clearly not real prices — they're parsed from nearby text that leaks into the price field.
@@ -202,7 +208,8 @@ The `scripts/setup_db.py` and `scripts/scrape_propertymarket_mt.py` are legacy S
 | Medium | No export_to_postgres bridge | ~2h (read DocStore, upsert to PostgreSQL) |
 | Medium | No Alembic migrations | ~30m (autogenerate from models) |
 | Medium | Frontend missing commercial/land types | ~15m |
-| Medium | Add `listing_type` field (sale vs rent) to all scrapers | ~30m |
+| Medium | ~~Add `listing_type` field (sale vs rent) to all scrapers~~ | **Done** |
+| Medium | RE/MAX rental price period not shown (Daily/Monthly) | ~30m |
 | Low | Phase 2 country scrapers (CY, HR) | ~1 day each |
 | Low | PropertyMarket.com.mt (403 blocked) | ~2h with Playwright |
 | Low | Legacy pipeline/ cleanup | ~30m |
