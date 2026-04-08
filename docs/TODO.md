@@ -73,13 +73,19 @@ Rental listings have a `Period` field from the API (Daily, Monthly, etc.) but we
 
 Fix: extract `Period` from the API response into a `price_period` field in the scraper and enrichment script. Display it next to the price in the dashboard (e.g. "€25 /day", "€1,500 /month").
 
-### MaltaPark garbage prices (phone numbers parsed as prices)
+### MaltaPark data quality issues (audit 2026-04-08)
 
-MaltaPark's price element sometimes contains phone numbers or reference IDs (e.g. €9,988,777,000 for a "Large Garage"). These are clearly not real prices — they're parsed from nearby text that leaks into the price field.
+**TYPE_MAP misclassification** — `"Apartment / Flat"` from MaltaPark doesn't match `"apartment"` key. 1,470 apartments and 309 other properties classified as `"other"`. Fix: expand TYPE_MAP with exact raw values.
 
-Root cause: `parse_listing_page` uses a broad regex `[\d,]+` on the price span, which can pick up non-price numbers. The detail page parser has the same issue.
+**Phone numbers as prices** — 22 docs have prices >10M EUR (Maltese phone numbers parsed as prices). Plus 55 docs with placeholder prices <€100 (mostly €1 "price on request").
 
-**Not capped** — legitimate properties can exceed €50M (e.g. Malta development sites at €65M in RE/MAX). Instead, this needs smarter validation: flag prices where `price / area_sqm` exceeds a threshold (e.g. €100K/sqm), or where the price is 100x the locality median.
+**"Wanted" ads** — 291 buyer-wanted listings (7%) with placeholder prices. Detectable via title keywords ("wanted", "looking for"). Should be filtered or flagged.
+
+**Area extraction errors** — description-fallback regex grabs wrong numbers (28 docs with area <10 sqm, e.g. 3 sqm for a maisonette). Low coverage overall (23%).
+
+**Unmapped conditions** — "Furnished" (1,153 docs), "Other" (538), "Site/Land" (286) not mapped by `map_condition()`.
+
+**0% bathrooms** — MaltaPark has no structured bathroom field. Only extractable via description NLP.
 
 ### DocStore wasn't storing new field values on re-scrape
 
@@ -204,7 +210,7 @@ The `scripts/setup_db.py` and `scripts/scrape_propertymarket_mt.py` are legacy S
 | High | BG_IMOT missing coordinates + 33% raw_data | ~2h (batch geocoding + re-scrape) |
 | High | ~~MT_REMAX missing descriptions~~ | **Done** (enrich_remax_mt.py, 99% coverage) |
 | High | ~~Fix property_type in mt_remax + mt_maltapark~~ | **Done** |
-| Medium | MaltaPark price validation (phone numbers as prices) | ~1h (smarter validation: price/sqm ratio, locality median comparison) |
+| Medium | MaltaPark data quality fixes (types, prices, wanted ads) | ~1h |
 | Medium | No export_to_postgres bridge | ~2h (read DocStore, upsert to PostgreSQL) |
 | Medium | No Alembic migrations | ~30m (autogenerate from models) |
 | Medium | Frontend missing commercial/land types | ~15m |

@@ -28,6 +28,7 @@ DELAY = 2.0
 
 TYPE_MAP = {
     "apartment": "apartment",
+    "apartment / flat": "apartment",
     "flat": "apartment",
     "penthouse": "penthouse",
     "maisonette": "maisonette",
@@ -46,11 +47,16 @@ TYPE_MAP = {
     "garage": "parking",
     "car space": "parking",
     "office": "commercial",
+    "offices": "commercial",
     "shop": "commercial",
+    "business outlet or shop": "commercial",
+    "other commercial": "commercial",
+    "industrial": "commercial",
     "warehouse": "commercial",
     "restaurant": "commercial",
     "plot": "land",
     "land": "land",
+    "land (odz)": "land",
     "site": "land",
 }
 
@@ -216,10 +222,14 @@ def map_condition(raw: str) -> str | None:
         return "new"
     elif "excellent" in raw_lower or "finish" in raw_lower:
         return "excellent"
+    elif "furnished" in raw_lower:
+        return "good"
     elif "good" in raw_lower:
         return "good"
     elif "renovat" in raw_lower:
         return "needs_renovation"
+    elif "site" in raw_lower or "land" in raw_lower:
+        return None  # not applicable for land
     return None
 
 
@@ -286,6 +296,12 @@ def main():
                 detail = parse_detail_page(resp.text)
 
                 price = detail.get("price") or listing.get("price")
+
+                # Detect wanted ads
+                title_text = (detail.get("title") or listing.get("title", "")).lower()
+                is_wanted = any(kw in title_text for kw in
+                    ["wanted", "looking for", "looking to buy", "searching for", "required"])
+
                 locality = detail.get("locality") or listing.get("locality")
                 raw_type = detail.get("property_type_raw") or listing.get("property_type", "")
                 prop_type = TYPE_MAP.get(raw_type.lower(), "other")
@@ -332,6 +348,7 @@ def main():
                     "image_local_paths": [],
                     "property_type_raw": raw_type,
                     "condition_raw": detail.get("condition_raw"),
+                    "is_wanted": 1 if is_wanted else 0,
                     "raw_data": {"listing": listing, "detail": detail},
                 }
 

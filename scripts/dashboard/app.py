@@ -131,9 +131,10 @@ async def browse(
     coll = store.collection(collection)
     docs = coll.find()
 
-    # Hide duplicates by default
+    # Hide duplicates and wanted ads by default
     if not show_dupes:
         docs = [d for d in docs if "duplicate_of" not in d.get("current", {})]
+    docs = [d for d in docs if not d.get("current", {}).get("is_wanted")]
 
     # Parse price filters (empty string = no filter)
     try:

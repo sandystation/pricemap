@@ -22,6 +22,25 @@ python view_data.py --price-drops     # Price change analysis
 python view_data.py --property ID     # Full history for one doc
 ```
 
+### Data Quality & Enrichment
+```bash
+cd scripts
+python enrich_remax_mt.py              # Fetch descriptions from RE/MAX detail API
+python dedup_remax.py --apply          # Mark duplicate RE/MAX listings
+python flag_suspicious.py              # Flag suspicious docs (for LLM review)
+python flag_suspicious.py --stats      # Show flag distribution only
+```
+
+### Valuation Models
+```bash
+cd scripts
+python train_valuation.py --listing-type sale          # Train apartment sales model
+python train_valuation.py --listing-type rent           # Train apartment rent model
+python train_valuation.py --listing-type sale --dry-run  # Show data stats only
+python train_valuation.py --listing-type sale --property-type penthouse  # Other types
+# Artifacts saved to ml/artifacts/
+```
+
 ### Dev Dashboard
 ```bash
 ./dev-dashboard.sh                    # Or: cd scripts && python -m dashboard.app
@@ -67,6 +86,7 @@ python -m pytest ../backend/tests/ -v # Backend unit tests (needs PostgreSQL)
 ### Data Flow
 ```
 Scrapers (httpx) → DocStore (JSONL files) → Dev Dashboard (FastAPI+Jinja2)
+                                           → train_valuation.py → ml/artifacts/ (LGB+XGB models)
                                            → [future] export_to_postgres → Production API
 ```
 
@@ -95,11 +115,39 @@ Three working scrapers, all using `httpx` + `BeautifulSoup`:
 
 | Script | Source | Method | Scale |
 |--------|--------|--------|-------|
-| `scrape_remax_mt.py` | RE/MAX Malta | JSON API at `/api/properties` | 32K+ listings with GPS |
-| `scrape_maltapark.py` | MaltaPark | Server-rendered HTML | ~4K listings with descriptions |
+| `scrape_remax_mt.py` | RE/MAX Malta | JSON API at `/api/properties` | 32K+ listings (sales + rentals) with GPS |
+| `scrape_maltapark.py` | MaltaPark | Server-rendered HTML | ~4K sales listings with descriptions |
 | `scrape_imot_bg.py` | Imot.bg | HTML + JSON-LD, windows-1251 encoding | 35 Bulgarian cities |
 
 Each scraper: builds a record dict → calls `coll.save_property(record)` → downloads images to `data/images/{source}/`. Shared utilities in `scraper_base.py`.
+
+All scrapers store the raw source data in a `raw_data` field (API response for RE/MAX, parsed listing+detail dicts for HTML scrapers). RE/MAX also has `raw_data_detail` from the enrichment script's detail API call.
+
+### Data Quality Pipeline (`scripts/flag_suspicious.py`, `scripts/dedup_remax.py`, `scripts/enrich_remax_mt.py`)
+
+**Enrichment**: `enrich_remax_mt.py` fetches the RE/MAX detail API (`/api/properties/{MLS}`) to add descriptions, features, room dimensions, agent info, and all photos. Safe to Ctrl+C; re-run skips already-enriched docs.
+
+**Deduplication**: `dedup_remax.py` groups listings by price + area + description (first 100 chars). Marks duplicates with `duplicate_of` pointing to the canonical doc. Dashboard hides duplicates by default.
+
+**Suspicion flagging**: `flag_suspicious.py` adds a `suspicious` list field to every doc. Empty list = clean; non-empty = reasons for review. Intended for downstream LLM post-processing. Flag types:
+
+| Flag | Meaning |
+|------|---------|
+| `price_extreme_high` | Price > €10M (possibly phone number) |
+| `price_placeholder` | Sale price < €100 |
+| `price_suspiciously_low` | Sale < €1K for non-parking/land |
+| `price_title_mismatch:XvsY` | Title contains a different price than stored |
+| `price_locality_outlier_high/low` | Price >50x or <1% of locality median |
+| `price_per_sqm_extreme_high/low` | Price/sqm outside reasonable range |
+| `price_on_request` | Text instead of number in price field |
+| `price_zero_or_negative` | Price ≤ 0 |
+| `area_too_small` | < 5 sqm for non-parking |
+| `area_too_large` | > 50K sqm for non-land |
+| `wanted_ad` | Buyer-wanted listing, not a property |
+| `duplicate` | Marked as duplicate of another listing |
+| `type_unknown` | Property type classified as "other" |
+| `no_price` | No price data at all |
+| `no_title` | Missing title |
 
 ### Dev Dashboard (`scripts/dashboard/`)
 FastAPI + Jinja2 + Tailwind CDN at port 8500. Routes: `/` (home), `/browse/{collection}` (grid+filters), `/property/{collection}/{id}` (detail+history), `/search` (cross-collection), `/stats` (market analytics). Images served via `/image/{path}`.
@@ -114,8 +162,16 @@ API: `POST /api/v1/valuations/estimate`, `GET /api/v1/properties/search`, `GET /
 ### Frontend (`frontend/src/`)
 Next.js 15 App Router. Pages: `/` (country selector), `/[country]` (heatmap), `/[country]/valuation` (form+results). Leaflet maps loaded via `dynamic()` import (no SSR). Uses Tailwind v4 with `@tailwindcss/postcss`.
 
-### ML (`ml/src/`)
-LightGBM + XGBoost ensemble trained per country. `python -m src.train --country MT`. Spatial cross-validation (geographic folds). Model artifacts saved as `.joblib`.
+### ML — Valuation Models (`scripts/train_valuation.py`, `ml/`)
+
+Two model pipelines exist:
+
+- **Working**: `scripts/train_valuation.py` trains from DocStore JSONL directly. LightGBM + XGBoost ensemble (0.7/0.3 weights), spatial cross-validation (5 geographic folds by latitude), log-transformed target. Separate models for sales vs rents. Excludes docs with `suspicious` flags or `duplicate_of`. Artifacts saved to `ml/artifacts/`.
+- **Scaffolded**: `ml/src/train.py` trains from PostgreSQL (not yet connected to DocStore). Same ensemble approach but different feature set.
+
+**Features used** (19 total): lat, lon, area_sqm, bedrooms, bathrooms, rooms, total_int_area, total_ext_area, 8 boolean amenities (extracted from RE/MAX `features` list), locality (target-encoded), province (target-encoded). Missing values passed as NaN — LightGBM/XGBoost handle them natively. Rental area_sqm is only 19% populated but still ranks as a top feature.
+
+**Artifacts per model** (in `ml/artifacts/`): `{prefix}_lgb_v{date}.joblib`, `{prefix}_xgb_v{date}.joblib`, `{prefix}_encoders_v{date}.joblib` (locality/province target encoding maps), `{prefix}_meta_v{date}.json` (metrics, feature importance, config).
 
 ## Important Gotchas
 
@@ -128,7 +184,9 @@ LightGBM + XGBoost ensemble trained per country. `python -m src.train --country 
 ## Key Technical Details
 
 - **Imot.bg encoding**: `windows-1251`, not UTF-8. Always set `resp.encoding = "windows-1251"`.
-- **RE/MAX API**: Wraps response in `{"data": {"Properties": [...], "TotalSearchResults": N}}`. Price is a string.
+- **RE/MAX API**: List endpoint wraps response in `{"data": {"Properties": [...], "TotalSearchResults": N}}`. Price is a string. `TransactionTypeId` param is ignored — always returns all listings (sales + rentals). Use `TransactionType` string field to distinguish. Detail endpoint at `/api/properties/{MLS}` returns descriptions, features, rooms, agent info. Base URL is `remax-malta.com` (no `www` — redirects to non-www).
+- **RE/MAX listing URLs**: `https://remax-malta.com/listings/{MLS}` (not `/property-details/`).
+- **Imot.bg JSON-LD bug**: The `itemOffered.name` field in JSON-LD says "Дава под Наем" (for rent) even on sales pages. Use the HTML `<h1>` tag for the title instead.
 - **Jinja2 filters**: `format_eur` and `format_sqm` must handle Jinja2 `Undefined` objects (not just `None`) since some docs lack price/area.
 - **FastAPI query params**: Use `str` type for optional numeric params (min_price, max_price) that HTML forms send as empty strings — `float` type rejects `""`.
 - **DocStore tracked fields**: `price_eur`, `price_per_sqm`, `area_sqm`, `bedrooms`, `bathrooms`, `rooms`, `title`, `description`, `locality`, `condition`, `is_active`, and more. Changes to these create history events; changes to other fields are stored silently.
