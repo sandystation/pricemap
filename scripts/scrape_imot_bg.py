@@ -91,9 +91,15 @@ TYPE_MAP = {
     "вила": "villa",
     "етаж от къща": "house",
     "пентхаус": "penthouse",
-    "гараж": "commercial",
+    "гараж": "parking",
+    "паркомясто": "parking",
     "офис": "commercial",
     "магазин": "commercial",
+    "склад": "commercial",
+    "бизнес имот": "commercial",
+    "пром. помещение": "commercial",
+    "заведение": "commercial",
+    "хотел": "commercial",
     "парцел": "land",
     "земя": "land",
 }
@@ -125,11 +131,11 @@ def parse_search_page(html: str) -> list[dict]:
         price_bgn = None
         if price_div:
             price_text = price_div.get_text(separator="\n").strip()
-            # "119 000 €\n232 743.77 лв."
-            eur_match = re.search(r"([\d\s]+)\s*€", price_text)
-            bgn_match = re.search(r"([\d\s,.]+)\s*лв", price_text)
+            # "119 000 €\n232 743.77 лв." or "15 338.76 €\n30 000 лв."
+            eur_match = re.search(r"([\d\s]+(?:[.,]\d+)?)\s*€", price_text)
+            bgn_match = re.search(r"([\d\s]+(?:[.,]\d+)?)\s*лв", price_text)
             if eur_match:
-                price_eur = float(eur_match.group(1).replace(" ", ""))
+                price_eur = float(eur_match.group(1).replace(" ", "").replace(",", "."))
             if bgn_match:
                 price_bgn = float(bgn_match.group(1).replace(" ", "").replace(",", "."))
 
@@ -166,7 +172,7 @@ def parse_detail_page(html: str, url: str) -> dict:
     soup = BeautifulSoup(html, "lxml")
     data = {}
 
-    # 1. Parse JSON-LD (cleanest data source)
+    # 1. Parse JSON-LD
     for script in soup.select('script[type="application/ld+json"]'):
         try:
             ld = json.loads(script.string)
@@ -174,7 +180,7 @@ def parse_detail_page(html: str, url: str) -> dict:
                 data["price_original"] = ld.get("price")
                 data["price_currency"] = ld.get("priceCurrency", "EUR")
                 item = ld.get("itemOffered", {})
-                data["title"] = item.get("name", "")
+                # JSON-LD "name" is unreliable (says "for rent" on sale pages)
                 data["description_short"] = item.get("description", "")
                 data["image_urls"] = item.get("image", [])
                 if isinstance(data["image_urls"], str):
@@ -186,7 +192,13 @@ def parse_detail_page(html: str, url: str) -> dict:
 
             elif ld.get("@type") == "BreadcrumbList":
                 items = ld.get("itemListElement", [])
-                # Extract city and quarter from breadcrumb
+                if len(items) >= 2:
+                    # "Продажби" or "Наеми" — detect listing type
+                    section = items[1].get("name", "").lower()
+                    if "продаж" in section:
+                        data["listing_type"] = "sale"
+                    elif "наем" in section:
+                        data["listing_type"] = "rent"
                 if len(items) >= 3:
                     data["city_name"] = items[2].get("name", "")
                 if len(items) >= 4:
@@ -194,15 +206,23 @@ def parse_detail_page(html: str, url: str) -> dict:
         except (json.JSONDecodeError, TypeError):
             continue
 
+    # Title from H1 (reliable) instead of JSON-LD name
+    h1 = soup.select_one("h1")
+    if h1:
+        # H1 has multiple lines; take the first line as the core title
+        h1_text = h1.get_text(separator=" ").strip()
+        # Clean up extra whitespace
+        data["title"] = " ".join(h1_text.split())
+
     # 2. Parse HTML for additional fields
 
     # Price (may have EUR and BGN)
     price_el = soup.select_one("div.adPrice .price .cena, div.cena")
     if price_el:
         price_text = price_el.get_text(separator="\n")
-        eur_match = re.search(r"([\d\s]+)\s*€", price_text)
+        eur_match = re.search(r"([\d\s]+(?:[.,]\d+)?)\s*€", price_text)
         if eur_match:
-            data["price_eur"] = float(eur_match.group(1).replace(" ", ""))
+            data["price_eur"] = float(eur_match.group(1).replace(" ", "").replace(",", "."))
         # Price per sqm
         per_sqm = soup.select_one("div.adPrice .price span")
         if per_sqm:
@@ -293,17 +313,19 @@ def detect_property_type(title: str) -> str:
     for bg_type, our_type in TYPE_MAP.items():
         if bg_type in title_lower:
             return our_type
-    return "apartment"  # default
+    logger.warning(f"Unknown property type in title: {title[:60]!r}")
+    return "other"
 
 
 def detect_rooms(title: str) -> int | None:
-    """Extract room count from title like '2-стаен' or 'Двустаен'."""
-    match = re.search(r"(\d)-стаен", title)
+    """Extract room count from title like '2-СТАЕН' or 'Двустаен'."""
+    match = re.search(r"(\d)-стаен", title, re.IGNORECASE)
     if match:
         return int(match.group(1))
-    words = {"едностаен": 1, "двустаен": 2, "тристаен": 3, "четиристаен": 4}
+    words = {"едностаен": 1, "двустаен": 2, "тристаен": 3, "четиристаен": 4, "многостаен": 5}
+    title_lower = title.lower()
     for word, count in words.items():
-        if word in title.lower():
+        if word in title_lower:
             return count
     return None
 
@@ -396,6 +418,33 @@ def scrape_city(client, coll, city_slug: str, city_name: str):
                 except (ValueError, TypeError):
                     price_eur = None
 
+            # Extract floor/heating from JSON-LD description_short
+            # e.g. "65 кв.м, Партер от 5, Лок.отопл., Тухла"
+            desc_short = detail.get("description_short", "")
+            if desc_short and not detail.get("floor"):
+                floor_match = re.search(r"(\d+)\s*[-–]?\s*(?:ти|ри|ви|ми|ет)\s*(?:ет\.?)?\s*от\s*(\d+)", desc_short)
+                if floor_match:
+                    detail["floor"] = int(floor_match.group(1))
+                    detail["total_floors"] = int(floor_match.group(2))
+                elif "Партер" in desc_short or "партер" in desc_short:
+                    detail["floor"] = 0
+                    of_match = re.search(r"от\s*(\d+)", desc_short)
+                    if of_match:
+                        detail["total_floors"] = int(of_match.group(1))
+
+            if desc_short and not detail.get("heating_type"):
+                heating_map = {
+                    "ТЕЦ": "central", "Газ": "gas", "Ток": "electric",
+                    "Лок.отопл": "local", "Печка": "stove",
+                }
+                for bg, en in heating_map.items():
+                    if bg in desc_short:
+                        detail["heating_type"] = en
+                        break
+
+            # Use listing_type from breadcrumb, or detect from URL
+            listing_type = detail.get("listing_type", "sale")
+
             # Build property record
             title = detail.get("title", "")
             prop_type = detect_property_type(title)
@@ -421,17 +470,22 @@ def scrape_city(client, coll, city_slug: str, city_name: str):
                 "locality": locality,
                 "city": city_name,
                 "property_type": prop_type,
-                "listing_type": "sale",
+                "listing_type": listing_type,
                 "area_sqm": detail.get("area_sqm"),
                 "floor": detail.get("floor"),
                 "total_floors": detail.get("total_floors"),
                 "rooms": rooms,
                 "construction_type": detail.get("construction_type"),
+                "heating_type": detail.get("heating_type"),
                 "price_eur": price_eur,
                 "price_original": detail.get("price_original"),
                 "price_currency": detail.get("price_currency", "EUR"),
                 "price_type": "asking",
-                "price_per_sqm": detail.get("price_per_sqm"),
+                "price_per_sqm": detail.get("price_per_sqm") or (
+                    round(price_eur / detail["area_sqm"], 2)
+                    if price_eur and detail.get("area_sqm") and detail["area_sqm"] > 0
+                    else None
+                ),
                 "price_adjusted_eur": round(price_eur * 0.93, 2) if price_eur else None,
                 "has_furnishing": detail.get("has_furnishing"),
                 "has_parking": detail.get("has_parking"),
