@@ -203,6 +203,20 @@ The `scripts/setup_db.py` and `scripts/scrape_propertymarket_mt.py` are legacy S
 
 ---
 
+## Valuation Model Improvements
+
+Current MAPE: 23% sales, 22% rents (after LLM text enrichment). Target: 15-18%. See `docs/model-metrics.md` for full benchmarks.
+
+| Priority | Improvement | Expected MAPE reduction | Effort | Status |
+|----------|-------------|------------------------|--------|--------|
+| 1 | Distance to coast + Valletta CBD | 1-3pp | Low | |
+| 2 | LLM image features (--with-images) | 1-2pp | Low | |
+| 3 | Add MaltaPark data (needs geocoding) | 1-2pp | Medium | |
+| 4 | GPBoost spatial random effects | 1-3pp | Medium | |
+| 5 | Transaction price data (Malta PPR) | 3-5pp | High (paid/restricted) | |
+
+---
+
 ## Summary
 
 | Priority | Issue | Effort |

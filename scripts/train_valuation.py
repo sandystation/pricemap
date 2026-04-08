@@ -23,6 +23,7 @@ import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from docstore import DocStore
+from osm_features import compute_osm_features, OSM_ALL_FEATURES
 
 logging.basicConfig(
     level=logging.INFO,
@@ -119,11 +120,102 @@ AMENITY_KEYWORDS = {
 NUMERIC_FEATURES = [
     "lat", "lon", "area_sqm", "bedrooms", "bathrooms", "rooms",
     "total_int_area", "total_ext_area",
+    "dist_coast_km", "dist_cbd_km",
+] + OSM_ALL_FEATURES
+
+# ---------------------------------------------------------------------------
+# Distance features
+# ---------------------------------------------------------------------------
+import math
+
+# Valletta CBD coordinates
+VALLETTA_LAT, VALLETTA_LON = 35.8989, 14.5146
+
+# Simplified Malta coastline polygon (main island + Gozo key points)
+# Used to compute distance to nearest coast. Points are (lon, lat).
+_MALTA_COAST_COORDS = [
+    # Malta main island (clockwise from Valletta)
+    (14.5146, 35.8989), (14.5366, 35.9025), (14.5621, 35.8236),
+    (14.5435, 35.8100), (14.5200, 35.8050), (14.4700, 35.8190),
+    (14.4200, 35.8350), (14.3500, 35.8600), (14.3340, 35.8850),
+    (14.3430, 35.9100), (14.3600, 35.9300), (14.3850, 35.9420),
+    (14.4200, 35.9530), (14.4500, 35.9580), (14.4800, 35.9590),
+    (14.5080, 35.9550), (14.5146, 35.8989),
+    # Gozo (separate ring, simplified)
 ]
 
-AMENITY_FEATURES = list(AMENITY_KEYWORDS.keys())
+_GOZO_COAST_COORDS = [
+    (14.2100, 36.0300), (14.2600, 36.0550), (14.2900, 36.0570),
+    (14.3100, 36.0500), (14.3200, 36.0350), (14.3000, 36.0200),
+    (14.2500, 36.0150), (14.2100, 36.0300),
+]
+
+
+def _build_coast_boundary():
+    """Build a shapely geometry of Malta's coastline for distance queries."""
+    from shapely.geometry import Polygon, MultiPolygon
+    malta = Polygon(_MALTA_COAST_COORDS)
+    gozo = Polygon(_GOZO_COAST_COORDS)
+    return MultiPolygon([malta, gozo]).boundary
+
+
+_coast_boundary = None
+
+
+def _haversine_km(lat1, lon1, lat2, lon2):
+    """Haversine distance in kilometers."""
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def compute_distances(lat: float, lon: float) -> dict:
+    """Compute distance to coast and CBD in km."""
+    global _coast_boundary
+    if _coast_boundary is None:
+        _coast_boundary = _build_coast_boundary()
+
+    from shapely.geometry import Point
+    # Distance to coast: use shapely (degrees) then convert roughly to km
+    # At Malta's latitude, 1 degree lat ≈ 111 km, 1 degree lon ≈ 90 km
+    pt = Point(lon, lat)
+    coast_deg = _coast_boundary.distance(pt)
+    # Approximate conversion using average scale at Malta latitude
+    coast_km = coast_deg * 100.0  # rough: avg of 111 and 90
+
+    cbd_km = _haversine_km(lat, lon, VALLETTA_LAT, VALLETTA_LON)
+
+    return {"dist_coast_km": round(coast_km, 3), "dist_cbd_km": round(cbd_km, 3)}
+
+AMENITY_FEATURES = list(AMENITY_KEYWORDS.keys()) + ["is_premium_zone"]
 
 CATEGORICAL_FEATURES = ["locality_enc", "province_enc"]
+
+# ---------------------------------------------------------------------------
+# LLM-extracted features (from llm_enrich.py)
+# ---------------------------------------------------------------------------
+LLM_NUMERIC_FEATURES = ["llm_condition", "llm_floor", "llm_total_floors"]
+LLM_BOOLEAN_FEATURES = ["llm_bright", "llm_quiet", "llm_sea_proximity"]
+
+# Ordinal encoding maps for LLM categorical features
+FURNISHING_MAP = {"unknown": 0, "unfurnished": 1, "partly_furnished": 2, "furnished": 3}
+VIEW_MAP = {"unknown": 0, "none": 0, "garden": 1, "pool": 1, "city": 2, "valley": 3, "harbour": 4, "sea": 5}
+QUALITY_MAP = {"budget": 1, "standard": 2, "premium": 3, "luxury": 4}
+CONSTRUCTION_MAP = {"unknown": 0, "off_plan": 1, "under_construction": 2, "completed": 3}
+RENOVATION_ERA_MAP = {"unknown": 0, "dated": 1, "recent": 2, "modern": 3}
+
+LLM_ORDINAL_FEATURES = {
+    "llm_furnishing": FURNISHING_MAP,
+    "llm_view": VIEW_MAP,
+    "llm_quality_tier": QUALITY_MAP,
+    "llm_construction_status": CONSTRUCTION_MAP,
+}
+
+# Image-based LLM features (only present if llm_enrich ran with --with-images)
+LLM_IMAGE_NUMERIC = ["llm_interior_score"]
+LLM_IMAGE_ORDINAL = {"llm_renovation_era": RENOVATION_ERA_MAP}
 
 
 # ===================================================================
@@ -209,8 +301,9 @@ def load_training_data(
             skipped["no_area"] += 1
             continue
 
-        # Store cleaned area back for feature building
+        # Store cleaned area and doc_id for feature building
         cur["_clean_area"] = area
+        cur["_doc_id"] = doc.get("_id", "")
         result.append(cur)
 
     logger.info(
@@ -235,19 +328,75 @@ def extract_amenities(features_list: list | None) -> dict:
     }
 
 
-def build_dataframe(docs: list[dict]) -> pd.DataFrame:
-    """Convert list of property dicts to a feature DataFrame."""
+def extract_llm_features(cur: dict) -> dict:
+    """Extract LLM-enriched features from a doc's current dict."""
+    row = {}
+    # Numeric
+    for f in LLM_NUMERIC_FEATURES:
+        val = cur.get(f)
+        row[f] = float(val) if val is not None else np.nan
+    # Boolean
+    for f in LLM_BOOLEAN_FEATURES:
+        val = cur.get(f)
+        row[f] = float(val) if val is not None else np.nan
+    # Ordinal categorical
+    for f, mapping in LLM_ORDINAL_FEATURES.items():
+        val = cur.get(f)
+        row[f] = float(mapping.get(val, 0)) if val is not None else np.nan
+    # Image-based numeric
+    for f in LLM_IMAGE_NUMERIC:
+        val = cur.get(f)
+        row[f] = float(val) if val is not None else np.nan
+    # Image-based ordinal
+    for f, mapping in LLM_IMAGE_ORDINAL.items():
+        val = cur.get(f)
+        row[f] = float(mapping.get(val, 0)) if val is not None else np.nan
+    return row
+
+
+def build_dataframe(
+    docs: list[dict],
+    llm_run: dict[str, dict] | None = None,
+) -> pd.DataFrame:
+    """Convert list of property dicts to a feature DataFrame.
+
+    If llm_run is provided (doc_id -> features dict from a run file),
+    those features are used instead of llm_* fields in the doc.
+    """
     rows = []
     for cur in docs:
         amenities = extract_amenities(cur.get("features"))
         total_int = cur.get("total_int_area")
         total_ext = cur.get("total_ext_area")
 
+        # LLM features: prefer run file if provided, else use DocStore fields
+        doc_id = cur.get("_doc_id", "")
+        if llm_run and doc_id in llm_run:
+            # Build a fake "current" with llm_ prefix for extract_llm_features
+            llm_cur = {f"llm_{k}": v for k, v in llm_run[doc_id].items()}
+            llm_cur["llm_model"] = llm_run[doc_id].get("_model", None)
+            llm = extract_llm_features(llm_cur)
+            llm_model = llm_cur.get("llm_model")
+        else:
+            llm = extract_llm_features(cur)
+            llm_model = cur.get("llm_model")
+
+        dists = compute_distances(cur["lat"], cur["lon"])
+        osm = compute_osm_features(cur["lat"], cur["lon"])
+
+        # Premium zone: from raw_data.Zone field (luxury developments)
+        raw = cur.get("raw_data", {})
+        zone = raw.get("Zone") if isinstance(raw, dict) else None
+        is_premium = 1.0 if zone else 0.0
+
         rows.append({
             "price_eur": cur["price_eur"],
             "lat": cur["lat"],
             "lon": cur["lon"],
             "area_sqm": cur.get("_clean_area", np.nan),
+            "is_premium_zone": is_premium,
+            **dists,
+            **osm,
             "bedrooms": cur.get("bedrooms") or np.nan,
             "bathrooms": cur.get("bathrooms") or np.nan,
             "rooms": cur.get("rooms") or np.nan,
@@ -256,6 +405,8 @@ def build_dataframe(docs: list[dict]) -> pd.DataFrame:
             "locality": cur.get("locality", "Unknown"),
             "province": cur.get("province", "Unknown"),
             **amenities,
+            **llm,
+            "_llm_model": llm_model,
         })
     return pd.DataFrame(rows)
 
@@ -278,7 +429,12 @@ def target_encode(
 
 def get_feature_names() -> list[str]:
     """Return the ordered list of feature column names."""
-    return NUMERIC_FEATURES + AMENITY_FEATURES + CATEGORICAL_FEATURES
+    return (
+        NUMERIC_FEATURES + AMENITY_FEATURES + CATEGORICAL_FEATURES
+        + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
+        + list(LLM_ORDINAL_FEATURES.keys())
+        + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
+    )
 
 
 # ===================================================================
@@ -377,12 +533,18 @@ def train_and_evaluate(
         )
 
         # Build feature matrices
-        X_train = df_train[NUMERIC_FEATURES + AMENITY_FEATURES].copy()
+        base_cols = (
+            NUMERIC_FEATURES + AMENITY_FEATURES
+            + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
+            + list(LLM_ORDINAL_FEATURES.keys())
+            + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
+        )
+        X_train = df_train[base_cols].copy()
         X_train["locality_enc"] = loc_train.values
         X_train["province_enc"] = prov_train.values
         X_train = X_train[feature_names].values
 
-        X_test = df_test[NUMERIC_FEATURES + AMENITY_FEATURES].copy()
+        X_test = df_test[base_cols].copy()
         X_test["locality_enc"] = loc_test.values
         X_test["province_enc"] = prov_test.values
         X_test = X_test[feature_names].values
@@ -443,7 +605,13 @@ def train_and_evaluate(
         df["province"],
     )
 
-    X_full = df[NUMERIC_FEATURES + AMENITY_FEATURES].copy()
+    base_cols = (
+        NUMERIC_FEATURES + AMENITY_FEATURES
+        + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
+        + list(LLM_ORDINAL_FEATURES.keys())
+        + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
+    )
+    X_full = df[base_cols].copy()
     X_full["locality_enc"] = locality_enc_full.values
     X_full["province_enc"] = province_enc_full.values
     X_full = X_full[feature_names].values
@@ -465,6 +633,11 @@ def train_and_evaluate(
     locality_map = dict(zip(df["locality"], locality_enc_full))
     province_map = dict(zip(df["province"], province_enc_full))
 
+    # Collect LLM enrichment metadata from training data
+    llm_models_used = df.get("_llm_model")  # not in features, but we stored it
+    llm_enriched_count = int(df["llm_condition"].notna().sum())
+    llm_feature_coverage = round(100 * llm_enriched_count / len(df), 1)
+
     return {
         "lgb_model": final_lgb,
         "xgb_model": final_xgb,
@@ -477,6 +650,8 @@ def train_and_evaluate(
         "fold_metrics": fold_metrics,
         "sample_count": len(df),
         "median_price": float(np.median(df["price_eur"])),
+        "llm_enriched_count": llm_enriched_count,
+        "llm_feature_coverage_pct": llm_feature_coverage,
     }
 
 
@@ -523,6 +698,12 @@ def save_artifacts(
         "outlier_bounds": config,
         "cv_metrics": results["cv_metrics"],
         "fold_metrics": results["fold_metrics"],
+        "llm_enrichment": {
+            "enriched_samples": results["llm_enriched_count"],
+            "coverage_pct": results["llm_feature_coverage_pct"],
+            "run_id": results.get("llm_run_id"),
+            "run_meta": results.get("llm_run_meta"),
+        },
     }
 
     with open(meta_path, "w") as f:
@@ -557,6 +738,25 @@ def print_dry_run_stats(df: pd.DataFrame, listing_type: str):
         n_valid = df[col].notna().sum()
         print(f"  {col:20s}: {n_valid:>5d}/{len(df)} ({100 * n_valid / len(df):5.1f}%)")
 
+    llm_cols = (
+        LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
+        + list(LLM_ORDINAL_FEATURES.keys())
+        + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
+    )
+    llm_any = df[llm_cols[0]].notna().sum() if llm_cols else 0
+    if llm_any > 0:
+        print(f"\nLLM feature coverage:")
+        for col in llm_cols:
+            n_valid = df[col].notna().sum()
+            print(f"  {col:25s}: {n_valid:>5d}/{len(df)} ({100 * n_valid / len(df):5.1f}%)")
+        models = df["_llm_model"].dropna().value_counts()
+        if len(models):
+            print(f"\nLLM models used:")
+            for m, c in models.items():
+                print(f"  {m}: {c}")
+    else:
+        print(f"\nLLM features: none (run llm_enrich.py first)")
+
     print(f"\nTop 15 localities:")
     for loc, cnt in df["locality"].value_counts().head(15).items():
         print(f"  {loc:25s}: {cnt:>4d}")
@@ -583,6 +783,10 @@ def main():
         help="Property type (default: apartment)",
     )
     parser.add_argument(
+        "--llm-run", default=None,
+        help="Load LLM features from a specific enrichment run ID (see llm_enrich.py --stats)",
+    )
+    parser.add_argument(
         "--dry-run", action="store_true",
         help="Show data stats without training",
     )
@@ -594,6 +798,18 @@ def main():
         sys.exit(1)
     config = MODEL_CONFIGS[config_key]
 
+    # Load LLM run data if specified
+    llm_run_data = None
+    llm_run_meta = None
+    if args.llm_run:
+        from llm_enrich import load_run, ENRICHMENTS_DIR
+        llm_run_data = load_run(args.llm_run)
+        meta_path = os.path.join(ENRICHMENTS_DIR, args.llm_run, "metadata.json")
+        if os.path.exists(meta_path):
+            with open(meta_path) as f:
+                llm_run_meta = json.load(f)
+        logger.info(f"Loaded LLM run '{args.llm_run}': {len(llm_run_data)} enrichments")
+
     # Load data
     docs = load_training_data(args.listing_type, args.property_type)
     if len(docs) < 50:
@@ -601,7 +817,7 @@ def main():
         sys.exit(1)
 
     # Build DataFrame
-    df = build_dataframe(docs)
+    df = build_dataframe(docs, llm_run=llm_run_data)
     logger.info(
         f"DataFrame: {len(df)} rows, "
         f"area_sqm coverage: {df['area_sqm'].notna().sum()}/{len(df)} "
@@ -615,6 +831,11 @@ def main():
     # Train
     feature_names = get_feature_names()
     results = train_and_evaluate(df, feature_names)
+
+    # Add LLM run info to results for metadata tracking
+    if llm_run_meta:
+        results["llm_run_id"] = args.llm_run
+        results["llm_run_meta"] = llm_run_meta
 
     # Save
     save_artifacts(results, args.property_type, args.listing_type, config)

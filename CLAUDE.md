@@ -29,6 +29,13 @@ python enrich_remax_mt.py              # Fetch descriptions from RE/MAX detail A
 python dedup_remax.py --apply          # Mark duplicate RE/MAX listings
 python flag_suspicious.py              # Flag suspicious docs (for LLM review)
 python flag_suspicious.py --stats      # Show flag distribution only
+python llm_enrich.py                   # Extract features from descriptions via LLM (text-only)
+python llm_enrich.py --with-images     # Include property photos (downloads all from URLs)
+python llm_enrich.py --provider openai --model gpt-5.4-mini  # Use OpenAI
+python llm_enrich.py --provider google --model gemini-2.5-flash  # Use Gemini
+python llm_enrich.py --max 50          # Test on 50 docs
+python llm_enrich.py --stats           # Show enrichment coverage
+# API keys loaded from scripts/.env (see scripts/.env.example)
 ```
 
 ### Valuation Models
@@ -169,9 +176,13 @@ Two model pipelines exist:
 - **Working**: `scripts/train_valuation.py` trains from DocStore JSONL directly. LightGBM + XGBoost ensemble (0.7/0.3 weights), spatial cross-validation (5 geographic folds by latitude), log-transformed target. Separate models for sales vs rents. Excludes docs with `suspicious` flags or `duplicate_of`. Artifacts saved to `ml/artifacts/`.
 - **Scaffolded**: `ml/src/train.py` trains from PostgreSQL (not yet connected to DocStore). Same ensemble approach but different feature set.
 
-**Features used** (19 total): lat, lon, area_sqm, bedrooms, bathrooms, rooms, total_int_area, total_ext_area, 8 boolean amenities (extracted from RE/MAX `features` list), locality (target-encoded), province (target-encoded). Missing values passed as NaN — LightGBM/XGBoost handle them natively. Rental area_sqm is only 19% populated but still ranks as a top feature.
+**Features used** (up to 30): lat, lon, area_sqm, bedrooms, bathrooms, rooms, total_int_area, total_ext_area, 8 boolean amenities (from RE/MAX `features` list), locality/province (target-encoded), plus LLM-extracted features when available (condition, floor, furnishing, view, quality_tier, construction_status, bright, quiet, sea_proximity, interior_score, renovation_era). Missing values passed as NaN — LightGBM/XGBoost handle them natively.
 
-**Artifacts per model** (in `ml/artifacts/`): `{prefix}_lgb_v{date}.joblib`, `{prefix}_xgb_v{date}.joblib`, `{prefix}_encoders_v{date}.joblib` (locality/province target encoding maps), `{prefix}_meta_v{date}.json` (metrics, feature importance, config).
+**LLM enrichment** (`scripts/llm_enrich.py`): Extracts structured features from property descriptions (and optionally photos) using Claude, OpenAI, or Gemini APIs. Supports `--with-images` for multimodal extraction. Results stored as `llm_*` fields in DocStore and automatically consumed by `train_valuation.py`. API keys loaded from `scripts/.env`.
+
+**Artifacts per model** (in `ml/artifacts/`): `{prefix}_lgb_v{date}.joblib`, `{prefix}_xgb_v{date}.joblib`, `{prefix}_encoders_v{date}.joblib` (locality/province target encoding maps), `{prefix}_meta_v{date}.json` (metrics, feature importance, config, LLM enrichment metadata).
+
+**Metrics tracking**: `docs/model-metrics.md` logs baseline and post-enrichment metrics for comparing training runs.
 
 ## Important Gotchas
 
@@ -219,6 +230,8 @@ The `docs/` folder contains detailed documentation beyond this file:
 - `docs/research/data-sources-cyprus.md` — Cyprus data sources (Phase 2, not yet scraped)
 - `docs/research/data-sources-croatia.md` — Croatia data sources (Phase 2, not yet scraped)
 - `docs/research/market-overview.md` — EU-wide AVM landscape, why these 4 countries are underserved
+- `docs/research/valuation-models.md` — AVM techniques, feature engineering, multimodal approaches, benchmarks, LLM enrichment pipeline
+- `docs/model-metrics.md` — Training run metrics log (baseline vs LLM-enriched)
 
 ## Blocked Data Sources
 

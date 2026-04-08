@@ -1,0 +1,22 @@
+[project]
+name = "pricemap"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "anthropic>=0.91.0",
+    "beautifulsoup4>=4.14.3",
+    "google-genai>=1.70.0",
+    "httpx>=0.28.1",
+    "joblib>=1.5.3",
+    "lightgbm>=4.6.0",
+    "numpy>=2.4.4",
+    "openai>=2.30.0",
+    "orjson>=3.11.8",
+    "pandas>=3.0.2",
+    "python-dotenv>=1.2.2",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.17.1",
+    "shapely>=2.1.2",
+    "xgboost>=3.2.0",
+]
