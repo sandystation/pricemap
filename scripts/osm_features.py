@@ -40,7 +40,17 @@ POI_CATEGORIES = [
     ("amenity", "pharmacy", "pharmacies"),
     ("leisure", "park", "parks"),
     ("amenity", "place_of_worship", "worship"),
+    ("natural", "beach", "beaches"),
+    ("leisure", "marina", "marinas"),
+    ("aeroway", "aerodrome", "airports"),
 ]
+
+# Key locations for distance features (lat, lon)
+KEY_LOCATIONS = {
+    "sliema": (35.9116, 14.5027),       # Sliema seafront
+    "stjulians": (35.9186, 14.4903),    # St Julian's / Paceville
+}
+
 
 # Approximate conversion at Malta latitude (35.9°N)
 # 1 degree lat ≈ 111.0 km, 1 degree lon ≈ cos(35.9°) * 111.0 ≈ 89.8 km
@@ -154,6 +164,9 @@ class OSMFeatureComputer:
             "dist_pharmacy_km": ["pharmacies"],
             "dist_park_km": ["parks"],
             "dist_worship_km": ["worship"],
+            "dist_beach_km": ["beaches"],
+            "dist_marina_km": ["marinas"],
+            "dist_airport_km": ["airports"],
         }
 
         for feat_name, categories in distance_features.items():
@@ -174,7 +187,21 @@ class OSMFeatureComputer:
             count = self._trees_count_within(self._all_restaurants_cafes, lat, lon, RADIUS_500M_DEG)
             result["dining_count_500m"] = count
 
+        # Distance to key locations (haversine)
+        for name, (klat, klon) in KEY_LOCATIONS.items():
+            result[f"dist_{name}_km"] = round(self._haversine(lat, lon, klat, klon), 3)
+
         return result
+
+    @staticmethod
+    def _haversine(lat1, lon1, lat2, lon2):
+        """Haversine distance in km."""
+        import math
+        R = 6371.0
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
     @staticmethod
     def _deg_to_km(deg_dist: float, lat: float) -> float:
@@ -209,6 +236,8 @@ OSM_DISTANCE_FEATURES = [
     "dist_school_km", "dist_bus_km", "dist_supermarket_km",
     "dist_restaurant_km", "dist_hospital_km", "dist_pharmacy_km",
     "dist_park_km", "dist_worship_km",
+    "dist_beach_km", "dist_marina_km", "dist_airport_km",
 ]
+OSM_KEY_LOCATION_FEATURES = [f"dist_{name}_km" for name in KEY_LOCATIONS]
 OSM_DENSITY_FEATURES = ["poi_count_500m", "dining_count_500m"]
-OSM_ALL_FEATURES = OSM_DISTANCE_FEATURES + OSM_DENSITY_FEATURES
+OSM_ALL_FEATURES = OSM_DISTANCE_FEATURES + OSM_KEY_LOCATION_FEATURES + OSM_DENSITY_FEATURES

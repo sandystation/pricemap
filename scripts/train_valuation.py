@@ -221,19 +221,24 @@ NOISE_MAP = {"unknown": 0, "busy": 1, "moderate": 2, "quiet": 3}
 LEASE_MAP = {"unknown": 0, "leasehold": 1, "freehold": 2}
 FLOORING_MAP = {"unknown": 0, "concrete": 1, "tiles": 2, "wood": 3, "marble": 4}
 
+# Features with natural order -- keep as ordinal (numeric)
 LLM_ORDINAL_FEATURES = {
     "llm_furnishing": FURNISHING_MAP,
-    "llm_view": VIEW_MAP,
     "llm_quality_tier": QUALITY_MAP,
     "llm_construction_status": CONSTRUCTION_MAP,
-    "llm_parking_type": PARKING_MAP,
-    "llm_outdoor_space": OUTDOOR_MAP,
     "llm_floor_category": FLOOR_CAT_MAP,
-    "llm_kitchen_type": KITCHEN_MAP,
-    "llm_orientation": ORIENTATION_MAP,
     "llm_ceiling_height": CEILING_MAP,
     "llm_noise_exposure": NOISE_MAP,
     "llm_lease_type": LEASE_MAP,
+}
+
+# Features without natural order -- use LightGBM native categorical
+LLM_CATEGORICAL_FEATURES = {
+    "llm_view": VIEW_MAP,
+    "llm_parking_type": PARKING_MAP,
+    "llm_outdoor_space": OUTDOOR_MAP,
+    "llm_kitchen_type": KITCHEN_MAP,
+    "llm_orientation": ORIENTATION_MAP,
 }
 
 # Image-based LLM features (only present if llm_enrich ran with --with-images)
@@ -241,6 +246,8 @@ LLM_IMAGE_NUMERIC = ["llm_interior_score", "llm_kitchen_score", "llm_bathroom_sc
                       "llm_exterior_condition", "llm_street_quality"]
 LLM_IMAGE_ORDINAL = {
     "llm_renovation_era": RENOVATION_ERA_MAP,
+}
+LLM_IMAGE_CATEGORICAL = {
     "llm_flooring_type": FLOORING_MAP,
 }
 
@@ -366,8 +373,12 @@ def extract_llm_features(cur: dict) -> dict:
     for f in LLM_BOOLEAN_FEATURES:
         val = cur.get(f)
         row[f] = float(val) if val is not None else np.nan
-    # Ordinal categorical
+    # Ordinal (natural order -- encode as numbers)
     for f, mapping in LLM_ORDINAL_FEATURES.items():
+        val = cur.get(f)
+        row[f] = float(mapping.get(val, 0)) if val is not None else np.nan
+    # Categorical (no natural order -- label-encode for LightGBM native categorical)
+    for f, mapping in LLM_CATEGORICAL_FEATURES.items():
         val = cur.get(f)
         row[f] = float(mapping.get(val, 0)) if val is not None else np.nan
     # Image-based numeric
@@ -376,6 +387,10 @@ def extract_llm_features(cur: dict) -> dict:
         row[f] = float(val) if val is not None else np.nan
     # Image-based ordinal
     for f, mapping in LLM_IMAGE_ORDINAL.items():
+        val = cur.get(f)
+        row[f] = float(mapping.get(val, 0)) if val is not None else np.nan
+    # Image-based categorical
+    for f, mapping in LLM_IMAGE_CATEGORICAL.items():
         val = cur.get(f)
         row[f] = float(mapping.get(val, 0)) if val is not None else np.nan
     return row
@@ -465,7 +480,9 @@ def get_feature_names() -> list[str]:
         NUMERIC_FEATURES + AMENITY_FEATURES + CATEGORICAL_FEATURES
         + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
         + list(LLM_ORDINAL_FEATURES.keys())
+        + list(LLM_CATEGORICAL_FEATURES.keys())
         + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
+        + list(LLM_IMAGE_CATEGORICAL.keys())
     )
 
 
@@ -548,6 +565,14 @@ def price_accuracy_buckets(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
 # Training
 # ===================================================================
 
+def _build_feature_matrix(df_slice, base_cols, feature_names, loc_codes, prov_codes, indices):
+    """Assemble feature matrix with label-encoded locality/province."""
+    X = df_slice[base_cols].copy()
+    X["locality_enc"] = loc_codes[indices]
+    X["province_enc"] = prov_codes[indices]
+    return X[feature_names].values
+
+
 def train_and_evaluate(
     df: pd.DataFrame,
     feature_names: list[str],
@@ -555,10 +580,33 @@ def train_and_evaluate(
 ) -> dict:
     """
     Train LightGBM + XGBoost ensemble with spatial CV.
-    Returns dict with models, metrics, feature importance, and locality encoding.
+    Uses LightGBM native categorical encoding for locality/province.
     """
     log_target = np.log(df["price_eur"].values)
     lats = df["lat"].values
+
+    # Label-encode locality and province as integers for LightGBM categorical
+    loc_cat = df["locality"].astype("category")
+    prov_cat = df["province"].astype("category")
+    loc_codes = loc_cat.cat.codes.values.astype(float)
+    prov_codes = prov_cat.cat.codes.values.astype(float)
+
+    # Indices of categorical features in the feature matrix
+    all_cat_names = (
+        ["locality_enc", "province_enc"]
+        + list(LLM_CATEGORICAL_FEATURES.keys())
+        + list(LLM_IMAGE_CATEGORICAL.keys())
+    )
+    cat_indices = [feature_names.index(c) for c in all_cat_names]
+
+    base_cols = (
+        NUMERIC_FEATURES + AMENITY_FEATURES
+        + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
+        + list(LLM_ORDINAL_FEATURES.keys())
+        + list(LLM_CATEGORICAL_FEATURES.keys())
+        + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
+        + list(LLM_IMAGE_CATEGORICAL.keys())
+    )
 
     splits = spatial_cv_splits(lats, n_folds)
 
@@ -567,55 +615,18 @@ def train_and_evaluate(
     fold_metrics = []
 
     for fold_i, (train_idx, test_idx) in enumerate(splits):
-        df_train = df.iloc[train_idx]
-        df_test = df.iloc[test_idx]
-
-        # Target encode locality and province within fold
-        log_target_train = log_target[train_idx]
-
-        loc_train = target_encode(
-            df_train["locality"], pd.Series(log_target_train, index=df_train.index),
-            df_train["locality"],
-        )
-        loc_test = target_encode(
-            df_train["locality"], pd.Series(log_target_train, index=df_train.index),
-            df_test["locality"],
-        )
-        prov_train = target_encode(
-            df_train["province"], pd.Series(log_target_train, index=df_train.index),
-            df_train["province"],
-        )
-        prov_test = target_encode(
-            df_train["province"], pd.Series(log_target_train, index=df_train.index),
-            df_test["province"],
-        )
-
-        # Build feature matrices
-        base_cols = (
-            NUMERIC_FEATURES + AMENITY_FEATURES
-            + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
-            + list(LLM_ORDINAL_FEATURES.keys())
-            + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
-        )
-        X_train = df_train[base_cols].copy()
-        X_train["locality_enc"] = loc_train.values
-        X_train["province_enc"] = prov_train.values
-        X_train = X_train[feature_names].values
-
-        X_test = df_test[base_cols].copy()
-        X_test["locality_enc"] = loc_test.values
-        X_test["province_enc"] = prov_test.values
-        X_test = X_test[feature_names].values
-
+        X_train = _build_feature_matrix(df.iloc[train_idx], base_cols, feature_names, loc_codes, prov_codes, train_idx)
+        X_test = _build_feature_matrix(df.iloc[test_idx], base_cols, feature_names, loc_codes, prov_codes, test_idx)
         y_train = log_target[train_idx]
         y_test = log_target[test_idx]
 
-        # Train LightGBM
+        # LightGBM with native categorical support
         lgb_model = lgb.LGBMRegressor(**LGBM_PARAMS)
-        lgb_model.fit(X_train, y_train, eval_set=[(X_test, y_test)])
+        lgb_model.fit(X_train, y_train, eval_set=[(X_test, y_test)],
+                      categorical_feature=cat_indices)
         lgb_pred_log = lgb_model.predict(X_test)
 
-        # Train XGBoost
+        # XGBoost (uses integer codes as ordinal -- still benefits)
         xgb_model = xgb.XGBRegressor(**XGB_PARAMS)
         xgb_model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         xgb_pred_log = xgb_model.predict(X_test)
@@ -653,32 +664,11 @@ def train_and_evaluate(
     # Retrain on full data
     logger.info("Retraining on full dataset...")
 
-    # Full-data target encoding
-    locality_enc_full = target_encode(
-        df["locality"], pd.Series(log_target, index=df.index),
-        df["locality"],
-    )
-    province_enc_full = target_encode(
-        df["province"], pd.Series(log_target, index=df.index),
-        df["province"],
-    )
+    X_full = _build_feature_matrix(df, base_cols, feature_names, loc_codes, prov_codes, np.arange(len(df)))
 
-    base_cols = (
-        NUMERIC_FEATURES + AMENITY_FEATURES
-        + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
-        + list(LLM_ORDINAL_FEATURES.keys())
-        + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
-    )
-    X_full = df[base_cols].copy()
-    X_full["locality_enc"] = locality_enc_full.values
-    X_full["province_enc"] = province_enc_full.values
-    X_full = X_full[feature_names].values
-
-    final_lgb = lgb.LGBMRegressor(**LGBM_PARAMS)
-    # No early stopping on full retrain -- remove eval_set
     params_no_es = {k: v for k, v in LGBM_PARAMS.items() if k != "early_stopping_rounds"}
     final_lgb = lgb.LGBMRegressor(**params_no_es)
-    final_lgb.fit(X_full, log_target)
+    final_lgb.fit(X_full, log_target, categorical_feature=cat_indices)
 
     params_no_es_xgb = {k: v for k, v in XGB_PARAMS.items() if k != "early_stopping_rounds"}
     final_xgb = xgb.XGBRegressor(**params_no_es_xgb)
@@ -687,12 +677,11 @@ def train_and_evaluate(
     # Feature importance
     importance = dict(zip(feature_names, final_lgb.feature_importances_.tolist()))
 
-    # Locality encoding map for inference
-    locality_map = dict(zip(df["locality"], locality_enc_full))
-    province_map = dict(zip(df["province"], province_enc_full))
+    # Category mappings for inference (locality name -> integer code)
+    locality_map = dict(zip(loc_cat, loc_codes))
+    province_map = dict(zip(prov_cat, prov_codes))
 
     # Collect LLM enrichment metadata from training data
-    llm_models_used = df.get("_llm_model")  # not in features, but we stored it
     llm_enriched_count = int(df["llm_condition"].notna().sum())
     llm_feature_coverage = round(100 * llm_enriched_count / len(df), 1)
 
@@ -701,8 +690,8 @@ def train_and_evaluate(
         "xgb_model": final_xgb,
         "feature_names": feature_names,
         "feature_importance": importance,
-        "locality_encoding": locality_map,
-        "province_encoding": province_map,
+        "locality_encoding": {k: int(v) for k, v in locality_map.items()},
+        "province_encoding": {k: int(v) for k, v in province_map.items()},
         "global_mean_log_price": float(log_target.mean()),
         "cv_metrics": {**overall, **overall_buckets},
         "fold_metrics": fold_metrics,
@@ -799,7 +788,9 @@ def print_dry_run_stats(df: pd.DataFrame, listing_type: str):
     llm_cols = (
         LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
         + list(LLM_ORDINAL_FEATURES.keys())
+        + list(LLM_CATEGORICAL_FEATURES.keys())
         + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
+        + list(LLM_IMAGE_CATEGORICAL.keys())
     )
     llm_any = df[llm_cols[0]].notna().sum() if llm_cols else 0
     if llm_any > 0:

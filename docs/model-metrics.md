@@ -215,3 +215,47 @@ Total features in model: 61
 | Within 5% | 17.7% | +4.6pp | +0.7pp |
 | Within 10% | 34.4% | **+8.6pp** | +0.9pp |
 | Within 20% | 61.4% | **+12.3pp** | **+1.5pp** |
+
+---
+
+## Stratified spatial CV + LightGBM native categorical encoding - 2026-04-09
+
+Changes: (1) Stratified spatial CV that distributes Gozo across all folds instead of isolating it. (2) Replaced target encoding of locality/province with LightGBM native categorical feature support (label encoding + `categorical_feature` parameter). LightGBM learns optimal municipality groupings rather than collapsing each to a mean-price number. Added `is_gozo` boolean feature.
+
+### Sales (apartment, mt_remax)
+
+| Metric | Value | vs Baseline |
+|--------|-------|-------------|
+| MAPE | **17.9%** | **-9.3pp** |
+| R2 | 0.6168 | **+0.095** |
+| MAE | 118,483 EUR | **-22.3%** |
+| Within 5% | 20.6% | +5.2pp |
+| Within 10% | 38.8% | **+10.1pp** |
+| Within 20% | 65.2% | **+15.1pp** |
+| Within 25% | 75.5% | **+16.1pp** |
+
+After adding dist_beach_km, dist_marina_km, dist_airport_km, dist_sliema_km, dist_stjulians_km:
+
+### Sales (apartment, mt_remax) -- CURRENT BEST
+
+| Metric | Value | vs Baseline |
+|--------|-------|-------------|
+| MAPE | **17.0%** | **-10.2pp** |
+| R2 | 0.6339 | **+0.112** |
+| MAE | 113,333 EUR | **-25.7%** |
+| Within 5% | 21.4% | +6.0pp |
+| Within 10% | 39.1% | **+10.4pp** |
+| Within 20% | 67.2% | **+17.1pp** |
+| Within 25% | 78.1% | **+18.7pp** |
+
+### Rents (apartment, mt_remax) -- CURRENT BEST
+
+| Metric | Value | vs Baseline |
+|--------|-------|-------------|
+| MAPE | **18.2%** | **-8.2pp** |
+| R2 | 0.6480 | **+0.231** |
+| MAE | 317 EUR | **-26.5%** |
+| Within 5% | 18.2% | +5.1pp |
+| Within 10% | 35.1% | **+9.3pp** |
+| Within 20% | 63.7% | **+14.6pp** |
+| Within 25% | 74.5% | **+15.7pp** |
