@@ -184,6 +184,13 @@ Two model pipelines exist:
 
 **Metrics tracking**: `docs/model-metrics.md` logs baseline and post-enrichment metrics for comparing training runs.
 
+## CI Linting
+
+Both backend and frontend are linted on every push. Ensure changes pass before committing:
+
+- **Backend (`ruff`)**: Line length limit is **100** chars (configured in `backend/pyproject.toml`). Rules: `E`, `F`, `I`, `N`, `W` — this includes unused imports (`F401`) and line-too-long (`E501`). Run `cd backend && ruff check src/` to verify.
+- **Frontend (`eslint`)**: Config lives in `frontend/eslint.config.mjs` (flat config, ESLint 9). Without this file, `next lint` prompts interactively and fails in CI. Run `cd frontend && npm run lint` to verify.
+
 ## Important Gotchas
 
 - **Scripts must run from `scripts/` directory** — all scraper modules use relative imports (`from docstore import ...`, `from scraper_base import ...`). Always `cd scripts` before running any script.

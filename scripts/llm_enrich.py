@@ -44,6 +44,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Suppress noisy loggers during parallel runs
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("google_genai.models").setLevel(logging.WARNING)
+
 # ---------------------------------------------------------------------------
 # Provider config
 # ---------------------------------------------------------------------------
@@ -171,12 +175,30 @@ Return a JSON object with these fields:
 - "quality_tier" (string): "luxury", "premium", "standard", or "budget"
 - "bright" (bool or null): true if good natural light is mentioned
 - "quiet" (bool or null): true if quiet/peaceful location is mentioned
-- "sea_proximity" (bool): true if near sea/coast/beach is mentioned"""
+- "sea_proximity" (bool): true if near sea/coast/beach is mentioned
+- "parking_type" (string): "double_garage", "garage", "car_space", "street", "none", or "unknown"
+- "outdoor_space" (string): best outdoor space - "roof_terrace", "terrace", "garden", "yard", "balcony", "none", or "unknown"
+- "outdoor_sqm" (int or null): outdoor space size in sqm if mentioned
+- "floor_category" (string): "ground", "low", "mid", "high", "penthouse_level", or "unknown" (infer from context even if exact floor not stated)
+- "building_units" (int or null): total units in the building/block if mentioned
+- "kitchen_type" (string): "open_plan", "separate", "kitchenette", or "unknown"
+- "orientation" (string): "south", "east", "west", "north", or "unknown"
+- "is_investment" (bool): true if described as investment/rental opportunity or already tenanted
+- "is_new_build" (bool): true if new development/construction (not resale)
+- "has_storage" (bool or null): true if storage room/boxroom mentioned
+- "ceiling_height" (string): "double", "high", "normal", or "unknown"
+- "noise_exposure" (string): "quiet", "moderate", "busy", or "unknown"
+- "lease_type" (string): "freehold", "leasehold", or "unknown" """
 
 IMAGE_FIELDS_SCHEMA = """
 - "interior_score" (int 1-5): overall interior quality visible in photos
 - "renovation_era" (string): "modern", "recent", "dated", or "unknown"
-- "photo_view" (string): view visible in photos - "sea", "urban", "countryside", "none", or "unknown" """
+- "photo_view" (string): view visible in photos - "sea", "urban", "countryside", "none", or "unknown"
+- "kitchen_score" (int 1-5): kitchen quality/modernity from photos (null if no kitchen visible)
+- "bathroom_score" (int 1-5): bathroom quality from photos (null if no bathroom visible)
+- "flooring_type" (string): "marble", "tiles", "wood", "concrete", or "unknown"
+- "exterior_condition" (int 1-5 or null): building exterior condition from photos
+- "street_quality" (int 1-5 or null): neighborhood/street quality visible in photos"""
 
 
 def build_user_prompt(cur: dict, with_images: bool) -> str:
@@ -245,7 +267,7 @@ def call_anthropic(client, model: str, user_prompt: str, images: list[dict]) -> 
 
     resp = client.messages.create(
         model=model,
-        max_tokens=400,
+        max_tokens=2048,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": content}],
     )
@@ -263,7 +285,7 @@ def call_openai(client, model: str, user_prompt: str, images: list[dict]) -> str
 
     resp = client.chat.completions.create(
         model=model,
-        max_tokens=400,
+        max_tokens=2048,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": content},
@@ -338,12 +360,30 @@ TEXT_FIELDS = {
     "bright": (bool, type(None)),
     "quiet": (bool, type(None)),
     "sea_proximity": bool,
+    "parking_type": str,
+    "outdoor_space": str,
+    "outdoor_sqm": (int, type(None)),
+    "floor_category": str,
+    "building_units": (int, type(None)),
+    "kitchen_type": str,
+    "orientation": str,
+    "is_investment": bool,
+    "is_new_build": bool,
+    "has_storage": (bool, type(None)),
+    "ceiling_height": str,
+    "noise_exposure": str,
+    "lease_type": str,
 }
 
 IMAGE_FIELDS = {
     "interior_score": int,
     "renovation_era": str,
     "photo_view": str,
+    "kitchen_score": (int, type(None)),
+    "bathroom_score": (int, type(None)),
+    "flooring_type": str,
+    "exterior_condition": (int, type(None)),
+    "street_quality": (int, type(None)),
 }
 
 
@@ -372,11 +412,11 @@ def parse_response(text: str, with_images: bool) -> dict | None:
         if key in data:
             result[key] = data[key]
 
-    # Clamp condition to 1-5
-    if "condition" in result and isinstance(result["condition"], int):
-        result["condition"] = max(1, min(5, result["condition"]))
-    if "interior_score" in result and isinstance(result["interior_score"], int):
-        result["interior_score"] = max(1, min(5, result["interior_score"]))
+    # Clamp 1-5 scores
+    for key in ("condition", "interior_score", "kitchen_score", "bathroom_score",
+                "exterior_condition", "street_quality"):
+        if key in result and isinstance(result[key], int):
+            result[key] = max(1, min(5, result[key]))
 
     return result if result else None
 
@@ -447,18 +487,22 @@ def _process_one(
     """Process one doc. Returns (doc_id, parsed_result, error_msg)."""
     cur = doc["current"]
 
-    # Download images if needed
+    # Download images if needed (each thread gets its own httpx client)
     images = []
     if with_images:
         image_urls = cur.get("all_image_urls", [])
-        if image_urls and http_client:
+        if image_urls:
             ext_id = doc_id.split(":", 1)[1] if ":" in doc_id else doc_id
-            local_paths = download_images(
-                http_client, image_urls, "mt_remax", ext_id,
-                max_images=20,
-            )
+            img_client = get_client()
+            try:
+                local_paths = download_images(
+                    img_client, image_urls, "mt_remax", ext_id,
+                    max_images=20,
+                )
+            finally:
+                img_client.close()
             if local_paths:
-                images = _load_images_base64(local_paths, max_images=6)
+                images = _load_images_base64(local_paths, max_images=20)
 
     user_prompt = build_user_prompt(cur, with_images=bool(images))
 
@@ -522,6 +566,7 @@ def process_docs(
     """Run LLM enrichment on docs in collection."""
     import threading
     from concurrent.futures import ThreadPoolExecutor, as_completed
+    from tqdm import tqdm
 
     coll._ensure_loaded()
 
@@ -560,7 +605,6 @@ def process_docs(
     # Initialize provider
     client = init_client(provider)
     call_fn = CALL_FNS[provider]
-    http_client = get_client() if with_images else None
 
     now_str = datetime.now(timezone.utc).isoformat()
     processed = 0
@@ -573,14 +617,16 @@ def process_docs(
             return None
         return _process_one(
             doc_id, doc, client, call_fn, model,
-            with_images, http_client, now_str,
+            with_images, None, now_str,
         )
+
+    pbar = tqdm(total=len(to_process), unit="doc", desc="Enriching",
+                dynamic_ncols=True)
 
     try:
         with ThreadPoolExecutor(max_workers=parallel) as executor:
             futures = {}
             submitted = 0
-            done_count = 0
 
             # Submit all tasks
             for doc_id, doc in to_process:
@@ -594,6 +640,7 @@ def process_docs(
                     time.sleep(delay / parallel)
 
             # Collect results as they complete
+            done_count = 0
             for fut in as_completed(futures):
                 if stop_event.is_set():
                     break
@@ -605,10 +652,13 @@ def process_docs(
                     logger.warning(f"Unexpected error for {doc_id}: {e}")
                     errors += 1
                     done_count += 1
+                    pbar.set_postfix(ok=processed, err=errors, refresh=False)
+                    pbar.update(1)
                     continue
 
                 if result is None:
                     done_count += 1
+                    pbar.update(1)
                     continue
 
                 ret_id, parsed, err_msg = result
@@ -631,29 +681,23 @@ def process_docs(
                         coll._mark_dirty()
                     processed += 1
 
-                # Progress + periodic flush
+                pbar.set_postfix(ok=processed, err=errors, refresh=False)
+                pbar.update(1)
+
+                # Periodic flush
                 if done_count % 100 == 0:
                     run_writer.flush()
                     if write_docstore:
                         coll.flush()
-                    elapsed = time.time() - _start_time
-                    rate = done_count / elapsed if elapsed > 0 else 0
-                    eta = (len(to_process) - done_count) / rate if rate > 0 else 0
-                    logger.info(
-                        f"Progress: {done_count}/{len(to_process)} "
-                        f"(ok={processed}, err={errors}, "
-                        f"{rate:.1f} docs/s, ETA {eta / 60:.0f}m)"
-                    )
 
     except KeyboardInterrupt:
         logger.info("Interrupted -- stopping workers and flushing...")
         stop_event.set()
     finally:
+        pbar.close()
         if write_docstore:
             coll.flush()
         run_writer.flush()
-        if http_client:
-            http_client.close()
 
     # Save run metadata
     run_writer.save_metadata({
@@ -699,7 +743,7 @@ def main():
     parser.add_argument("--with-images", action="store_true", help="Include property photos")
     parser.add_argument("--max", type=int, default=None, help="Max docs to process")
     parser.add_argument("--all", action="store_true", help="Re-process already enriched docs")
-    parser.add_argument("--parallel", type=int, default=1, help="Number of parallel API calls (default: 1)")
+    parser.add_argument("--parallel", type=int, default=20, help="Number of parallel API calls (default: 20)")
     parser.add_argument("--delay", type=float, default=0.1, help="Delay between API calls (seconds)")
     parser.add_argument("--run-name", default=None, help="Custom run ID (auto-generated if not set)")
     parser.add_argument("--no-docstore", action="store_true", help="Don't write results to DocStore (run file only)")

@@ -111,5 +111,8 @@ class Property(Base):
 
     __table_args__ = (
         Index("ix_properties_geo", "geometry", postgresql_using="gist"),
-        Index("ix_properties_country_type_price", "country_id", "property_type", "price_adjusted_eur"),
+        Index(
+            "ix_properties_country_type_price",
+            "country_id", "property_type", "price_adjusted_eur",
+        ),
     )

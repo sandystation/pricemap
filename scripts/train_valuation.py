@@ -196,8 +196,14 @@ CATEGORICAL_FEATURES = ["locality_enc", "province_enc"]
 # ---------------------------------------------------------------------------
 # LLM-extracted features (from llm_enrich.py)
 # ---------------------------------------------------------------------------
-LLM_NUMERIC_FEATURES = ["llm_condition", "llm_floor", "llm_total_floors"]
-LLM_BOOLEAN_FEATURES = ["llm_bright", "llm_quiet", "llm_sea_proximity"]
+LLM_NUMERIC_FEATURES = [
+    "llm_condition", "llm_floor", "llm_total_floors",
+    "llm_outdoor_sqm", "llm_building_units",
+]
+LLM_BOOLEAN_FEATURES = [
+    "llm_bright", "llm_quiet", "llm_sea_proximity",
+    "llm_is_investment", "llm_is_new_build", "llm_has_storage",
+]
 
 # Ordinal encoding maps for LLM categorical features
 FURNISHING_MAP = {"unknown": 0, "unfurnished": 1, "partly_furnished": 2, "furnished": 3}
@@ -205,17 +211,38 @@ VIEW_MAP = {"unknown": 0, "none": 0, "garden": 1, "pool": 1, "city": 2, "valley"
 QUALITY_MAP = {"budget": 1, "standard": 2, "premium": 3, "luxury": 4}
 CONSTRUCTION_MAP = {"unknown": 0, "off_plan": 1, "under_construction": 2, "completed": 3}
 RENOVATION_ERA_MAP = {"unknown": 0, "dated": 1, "recent": 2, "modern": 3}
+PARKING_MAP = {"unknown": 0, "none": 0, "street": 1, "car_space": 2, "garage": 3, "double_garage": 4}
+OUTDOOR_MAP = {"unknown": 0, "none": 0, "balcony": 1, "yard": 2, "garden": 3, "terrace": 4, "roof_terrace": 5}
+FLOOR_CAT_MAP = {"unknown": 0, "ground": 1, "low": 2, "mid": 3, "high": 4, "penthouse_level": 5}
+KITCHEN_MAP = {"unknown": 0, "kitchenette": 1, "separate": 2, "open_plan": 3}
+ORIENTATION_MAP = {"unknown": 0, "north": 1, "west": 2, "east": 3, "south": 4}
+CEILING_MAP = {"unknown": 0, "normal": 1, "high": 2, "double": 3}
+NOISE_MAP = {"unknown": 0, "busy": 1, "moderate": 2, "quiet": 3}
+LEASE_MAP = {"unknown": 0, "leasehold": 1, "freehold": 2}
+FLOORING_MAP = {"unknown": 0, "concrete": 1, "tiles": 2, "wood": 3, "marble": 4}
 
 LLM_ORDINAL_FEATURES = {
     "llm_furnishing": FURNISHING_MAP,
     "llm_view": VIEW_MAP,
     "llm_quality_tier": QUALITY_MAP,
     "llm_construction_status": CONSTRUCTION_MAP,
+    "llm_parking_type": PARKING_MAP,
+    "llm_outdoor_space": OUTDOOR_MAP,
+    "llm_floor_category": FLOOR_CAT_MAP,
+    "llm_kitchen_type": KITCHEN_MAP,
+    "llm_orientation": ORIENTATION_MAP,
+    "llm_ceiling_height": CEILING_MAP,
+    "llm_noise_exposure": NOISE_MAP,
+    "llm_lease_type": LEASE_MAP,
 }
 
 # Image-based LLM features (only present if llm_enrich ran with --with-images)
-LLM_IMAGE_NUMERIC = ["llm_interior_score"]
-LLM_IMAGE_ORDINAL = {"llm_renovation_era": RENOVATION_ERA_MAP}
+LLM_IMAGE_NUMERIC = ["llm_interior_score", "llm_kitchen_score", "llm_bathroom_score",
+                      "llm_exterior_condition", "llm_street_quality"]
+LLM_IMAGE_ORDINAL = {
+    "llm_renovation_era": RENOVATION_ERA_MAP,
+    "llm_flooring_type": FLOORING_MAP,
+}
 
 
 # ===================================================================

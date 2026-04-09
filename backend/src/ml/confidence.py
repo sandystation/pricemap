@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from geoalchemy2.functions import ST_DWithin, ST_MakePoint, ST_SetSRID
+from geoalchemy2.functions import ST_MakePoint, ST_SetSRID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

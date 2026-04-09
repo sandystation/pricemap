@@ -153,14 +153,32 @@ Note: OSM distance features benefit the rent model more than sales. Renters are 
 
 ---
 
-## After LLM enrichment (with images) - TBD
+## After LLM enrichment (with images) + dist + OSM + premium zone - 2026-04-09
 
+LLM run: `images_gemini31flash`
+LLM provider/model: Google / gemini-3.1-flash-lite-preview
+Mode: with-images (up to 6 photos per listing), 10 parallel workers, 31,960 docs enriched
 Additional features over text-only: llm_interior_score, llm_renovation_era, llm_photo_view
+Also includes: dist_coast_km, dist_cbd_km, 10 OSM distance/density features, is_premium_zone
 
 ### Sales (apartment, mt_remax)
 
-_To be filled._
+| Metric | Value | vs Baseline | vs text-only |
+|--------|-------|-------------|-------------|
+| MAPE | 23.3% | **-3.9pp** | -0.1pp |
+| R2 | 0.6143 | **+0.092** | **+0.033** |
+| MAE | 129,027 EUR | **-15.4%** | -3.8% |
+| Within 5% | 17.1% | +1.7pp | +1.0pp |
+| Within 10% | 33.5% | **+4.8pp** | +2.0pp |
+| Within 20% | 56.6% | **+6.5pp** | +0.8pp |
 
 ### Rents (apartment, mt_remax)
 
-_To be filled._
+| Metric | Value | vs Baseline | vs text-only |
+|--------|-------|-------------|-------------|
+| MAPE | 20.9% | **-5.5pp** | **-1.4pp** |
+| R2 | 0.6306 | **+0.214** | **+0.063** |
+| MAE | 337 EUR | **-21.8%** | **-7.4%** |
+| Within 5% | 17.0% | +3.9pp | +1.1pp |
+| Within 10% | 33.5% | **+7.7pp** | +1.4pp |
+| Within 20% | 59.9% | **+10.8pp** | +2.7pp |
