@@ -399,13 +399,17 @@ def extract_llm_features(cur: dict) -> dict:
 def build_dataframe(
     docs: list[dict],
     llm_run: dict[str, dict] | None = None,
+    coord_overrides: dict[str, tuple[float, float]] | None = None,
 ) -> pd.DataFrame:
     """Convert list of property dicts to a feature DataFrame.
 
     If llm_run is provided (doc_id -> features dict from a run file),
     those features are used instead of llm_* fields in the doc.
+    If coord_overrides is provided (doc_id -> (lat, lon)), geocoded
+    coordinates replace town-level ones for distance calculations.
     """
     rows = []
+    n_refined = 0
     for cur in docs:
         amenities = extract_amenities(cur.get("features"))
         total_int = cur.get("total_int_area")
@@ -423,8 +427,14 @@ def build_dataframe(
             llm = extract_llm_features(cur)
             llm_model = cur.get("llm_model")
 
-        dists = compute_distances(cur["lat"], cur["lon"])
-        osm = compute_osm_features(cur["lat"], cur["lon"])
+        # Use refined coordinates if available (from geocoded location_reference)
+        lat, lon = cur["lat"], cur["lon"]
+        if coord_overrides and doc_id in coord_overrides:
+            lat, lon = coord_overrides[doc_id]
+            n_refined += 1
+
+        dists = compute_distances(lat, lon)
+        osm = compute_osm_features(lat, lon)
 
         # Premium zone: from raw_data.Zone field (luxury developments)
         raw = cur.get("raw_data", {})
@@ -437,8 +447,8 @@ def build_dataframe(
 
         rows.append({
             "price_eur": cur["price_eur"],
-            "lat": cur["lat"],
-            "lon": cur["lon"],
+            "lat": lat,
+            "lon": lon,
             "area_sqm": cur.get("_clean_area", np.nan),
             "is_premium_zone": is_premium,
             "is_gozo": is_gozo,
@@ -455,6 +465,8 @@ def build_dataframe(
             **llm,
             "_llm_model": llm_model,
         })
+    if n_refined:
+        logger.info(f"Refined coordinates for {n_refined}/{len(docs)} docs via geocoded location_reference")
     return pd.DataFrame(rows)
 
 
@@ -850,6 +862,7 @@ def main():
     # Load LLM run data if specified
     llm_run_data = None
     llm_run_meta = None
+    coord_overrides = None
     if args.llm_run:
         from llm_enrich import load_run, ENRICHMENTS_DIR
         llm_run_data = load_run(args.llm_run)
@@ -859,6 +872,15 @@ def main():
                 llm_run_meta = json.load(f)
         logger.info(f"Loaded LLM run '{args.llm_run}': {len(llm_run_data)} enrichments")
 
+        # Load geocoded coordinate overrides if available
+        try:
+            from geocode_locations import build_coordinate_overrides
+            coord_overrides = build_coordinate_overrides(args.llm_run)
+            if coord_overrides:
+                logger.info(f"Loaded {len(coord_overrides)} geocoded coordinate overrides")
+        except Exception:
+            pass  # geocoding not yet run, that's fine
+
     # Load data
     docs = load_training_data(args.listing_type, args.property_type)
     if len(docs) < 50:
@@ -866,7 +888,7 @@ def main():
         sys.exit(1)
 
     # Build DataFrame
-    df = build_dataframe(docs, llm_run=llm_run_data)
+    df = build_dataframe(docs, llm_run=llm_run_data, coord_overrides=coord_overrides)
     logger.info(
         f"DataFrame: {len(df)} rows, "
         f"area_sqm coverage: {df['area_sqm'].notna().sum()}/{len(df)} "

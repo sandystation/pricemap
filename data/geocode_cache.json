@@ -1,0 +1,1427 @@
+{
+  "urban conservation area|Attard": null,
+  "balluta beach|Sliema": {
+    "lat": 35.9120309,
+    "lon": 14.4937443,
+    "display_name": "Holiday - Malta Balluta Beach, 174, Triq il-Kulle\u0121\u0121 l-Antik, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1372, Malta",
+    "query_used": "Balluta Beach, Sliema, Malta"
+  },
+  "uca area|Attard": null,
+  "university of malta and mater dei hospital|Birkirkara": null,
+  "mercury tower|Paceville": {
+    "lat": 35.9227886,
+    "lon": 14.4893348,
+    "display_name": "Mercury Tower, Triq San \u0120or\u0121, San \u0120iljan, Re\u0121jun tal-Lvant, STJ 3200, Malta",
+    "query_used": "Mercury Tower, Malta"
+  },
+  "san klement park|Fgura": null,
+  "junior college|Guardamangia": {
+    "lat": 35.8925749,
+    "lon": 14.4886728,
+    "display_name": "G. F. Abela Junior College, Triq Oscar Zammit, L-Imsida, Re\u0121jun tal-Lvant, MSD 1252, Malta",
+    "query_used": "Junior College, Malta"
+  },
+  "st paul's islands|Bugibba": null,
+  "fort chambray|Gozo - Ghajnsielem": {
+    "lat": 36.0233899,
+    "lon": 14.2920684,
+    "display_name": "Fort Chambray, Triq Chambray, L-Im\u0121arr, G\u0127ajnsielem, Re\u0121jun G\u0127awdex, GSM 1063, Malta",
+    "query_used": "Fort Chambray, Gozo - Ghajnsielem, Malta"
+  },
+  "tigne|Sliema": {
+    "lat": 35.9066177,
+    "lon": 14.5133136,
+    "display_name": "Fort Tign\u00e9, Pjazza Tign\u00e9, Tas-Sliema, Re\u0121jun tal-Lvant, TPO 0001, Malta",
+    "query_used": "Tigne, Sliema, Malta"
+  },
+  "fort cambridge|Sliema": {
+    "lat": 35.9090035,
+    "lon": 14.509692,
+    "display_name": "Cambridge Battery, Triq ta' Ponta ta' Dragut, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 3143, Malta",
+    "query_used": "Fort Cambridge, Sliema, Malta"
+  },
+  "border of birkirkara and balzan|Birkirkara": null,
+  "sliema ferry terminal|Sliema": {
+    "lat": 35.9084509,
+    "lon": 14.5051641,
+    "display_name": "Sliema Ferry Terminal, Ix-Xatt tal-G\u017cira, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1026, Malta",
+    "query_used": "Sliema Ferry Terminal, Sliema, Malta"
+  },
+  "spinola|San Gwann": {
+    "lat": 35.9206971,
+    "lon": 14.4909349,
+    "display_name": "Il-Palazz ta' Spinola, Triq il-Knisja, San \u0120iljan, Re\u0121jun tal-Lvant, STJ 3246, Malta",
+    "query_used": "Spinola, Malta"
+  },
+  "portomaso|Paceville": {
+    "lat": 35.9206867,
+    "lon": 14.493595,
+    "display_name": "Portomaso, San \u0120iljan, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "Portomaso, Malta"
+  },
+  "tigne point|Sliema": {
+    "lat": 35.9076335,
+    "lon": 14.5106248,
+    "display_name": "The Point, Ix-Xatt ta' Qui-si-Sana, Tas-Sliema, Re\u0121jun tal-Lvant, TPO 0001, Malta",
+    "query_used": "Tigne Point, Sliema, Malta"
+  },
+  "santa maria estate|Mellieha": null,
+  "st andrews|Swieqi": {
+    "lat": 35.9193791,
+    "lon": 14.4803465,
+    "display_name": "St Andrews Farm, Triq il-Qasam, Is-Swieqi, Re\u0121jun tal-Lvant, SGN 1881, Malta",
+    "query_used": "St Andrews, Swieqi, Malta"
+  },
+  "pender gardens|St Julian's": null,
+  "ora|St Julian's": {
+    "lat": 35.9278008,
+    "lon": 14.488699,
+    "display_name": "Hard Rock Hotel / ORA Residences, San \u0120iljan, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "Ora, St Julian's, Malta"
+  },
+  "msida marina|Guardamangia": null,
+  "rotunda church|Gozo - Xewkija": {
+    "lat": 36.0315693,
+    "lon": 14.260995,
+    "display_name": "Knisja Ar\u010bipretali San \u0120wann Battista, Triq l-Ar\u010bipriet Pietru Pawl \u010aiantar, Ix-Xewkija, Re\u0121jun G\u0127awdex, XWK 1028, Malta",
+    "query_used": "Rotunda Church, Gozo - Xewkija, Malta"
+  },
+  "three cities|Cospicua": {
+    "lat": 35.8810796,
+    "lon": 14.5202569,
+    "display_name": "Three Cities Jewellery, Tara\u0121 il-Le\u0121\u0121enda tal-Mar\u017cabba, Bormla, Re\u0121jun tal-Port, BML 2064, Malta",
+    "query_used": "Three Cities, Cospicua, Malta"
+  },
+  "sliema promenade|Gzira": null,
+  "mercury suites|St Julian's": null,
+  "surfside|Sliema": {
+    "lat": 35.9163336,
+    "lon": 14.5038088,
+    "display_name": "Surfside Restaurant, Triq it-Torri, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1604, Malta",
+    "query_used": "Surfside, Sliema, Malta"
+  },
+  "mercury towers|Paceville": null,
+  "msida yacht marina|Msida": null,
+  "grand harbour|Cospicua": {
+    "lat": 35.8838332,
+    "lon": 14.520454,
+    "display_name": "Grand Harbour Marina;Valletta - Three Cities, Dock No. 1, Bormla, Re\u0121jun tal-Port, BML 2064, Malta",
+    "query_used": "grand harbour, Cospicua, Malta"
+  },
+  "cospicua waterfront|Cospicua": null,
+  "mdina area|Rabat": null,
+  "marsalforn bay|Gozo - Marsalforn": {
+    "lat": 36.0712984,
+    "lon": 14.2595701,
+    "display_name": "Marsalforn Bay, Triq il-Port, Il-Qbajjar, Marsalforn, I\u017c-\u017bebbu\u0121, Re\u0121jun G\u0127awdex, MFN 1211, Malta",
+    "query_used": "Marsalforn Bay, Gozo - Marsalforn, Malta"
+  },
+  "st julian's|Pembroke": {
+    "lat": 35.9199225,
+    "lon": 14.4877119,
+    "display_name": "San \u0120iljan, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "St Julian's, Malta"
+  },
+  "marina|Cospicua": {
+    "lat": 35.8838332,
+    "lon": 14.520454,
+    "display_name": "Grand Harbour Marina;Valletta - Three Cities, Dock No. 1, Bormla, Re\u0121jun tal-Port, BML 2064, Malta",
+    "query_used": "Marina, Cospicua, Malta"
+  },
+  "yacht marina|Cospicua": {
+    "lat": 35.9038882,
+    "lon": 14.4960042,
+    "display_name": "Manoel Island Yacht Marina, Ix-Xatt ta' Xbiex, Ta' Xbiex, Re\u0121jun tal-Lvant, XBX 1099, Malta",
+    "query_used": "Yacht Marina, Malta"
+  },
+  "promenade and the marina|Pieta": null,
+  "hal far|Hal-Far": {
+    "lat": 35.8197421,
+    "lon": 14.5061933,
+    "display_name": "\u0126al Far, Triq \u0126al Far, Bir\u017cebbu\u0121a, Re\u0121jun tan-Nofsinhar, BBG 1758, Malta",
+    "query_used": "Hal Far, Hal-Far, Malta"
+  },
+  "kempinski hotel & spa|Gozo - Gharb": null,
+  "vincenti buildings|Valletta": null,
+  "barts university|Gozo - Victoria": null,
+  "st. elmo's|Valletta": {
+    "lat": 35.901984,
+    "lon": 14.5188059,
+    "display_name": "Fort Saint Elmo, Misra\u0127 Sant' Iermu, Diju Balli, Il-Belt Valletta, Re\u0121jun tal-Port, VLT 1645, Malta",
+    "query_used": "St. Elmo's, Valletta, Malta"
+  },
+  "the citadel|Gozo - Victoria": null,
+  "sliema ferries|Sliema": {
+    "lat": 35.9088332,
+    "lon": 14.5042821,
+    "display_name": "Tas-Sliema - Ferries 2, Ix-Xatt tal-G\u017cira, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1025, Malta",
+    "query_used": "Sliema Ferries, Sliema, Malta"
+  },
+  "balluta bay|Gzira": {
+    "lat": 35.9154135,
+    "lon": 14.4943232,
+    "display_name": "Il-Bajja ta' Balluta, Malta",
+    "query_used": "Balluta Bay, Malta"
+  },
+  "marsalforn valley|Gozo - Xaghra": null,
+  "general hospital|Gozo - Victoria": {
+    "lat": 36.0396266,
+    "lon": 14.2454507,
+    "display_name": "VGH Gozo General Hospital, Triq G\u0127ajn Qatet, Rabat, Ir-Rabat, Re\u0121jun G\u0127awdex, VCT 2520, Malta",
+    "query_used": "General Hospital, Gozo - Victoria, Malta"
+  },
+  "the strand promenade|Gzira": null,
+  "xwejni bay|Gozo - Marsalforn": {
+    "lat": 36.0791713,
+    "lon": 14.2480852,
+    "display_name": "Il-Bajja tax-Xwejni, Il-Qbajjar, Marsalforn, MFN 1211, Malta",
+    "query_used": "Xwejni Bay, Malta"
+  },
+  "the strand|Gzira": {
+    "lat": 35.9082085,
+    "lon": 14.5011922,
+    "display_name": "Ix-Xatt tal-G\u017cira, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1020, Malta",
+    "query_used": "the Strand, Gzira, Malta"
+  },
+  "spinola road|St Julian's": null,
+  "gozo general hospital|Gozo - Victoria": {
+    "lat": 36.0396266,
+    "lon": 14.2454507,
+    "display_name": "VGH Gozo General Hospital, Triq G\u0127ajn Qatet, Rabat, Ir-Rabat, Re\u0121jun G\u0127awdex, VCT 2520, Malta",
+    "query_used": "Gozo General Hospital, Gozo - Victoria, Malta"
+  },
+  "manoel island|Gzira": {
+    "lat": 35.9033152,
+    "lon": 14.5019463,
+    "display_name": "Il-G\u017cira Manoel, Il-G\u017cira, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "Manoel Island, Gzira, Malta"
+  },
+  "sliema creek|Gzira": null,
+  "spinola bay|Sliema": {
+    "lat": 35.9189835,
+    "lon": 14.4919983,
+    "display_name": "Ix-Xatt ta\u2019 Spinola, STJ 3013, Malta",
+    "query_used": "Spinola Bay, Malta"
+  },
+  "st john's co-cathedral|Valletta": {
+    "lat": 35.8976958,
+    "lon": 14.5126286,
+    "display_name": "Saint John's Co-Cathedral, Triq San \u0120wann, Il-Belt Valletta, Re\u0121jun tal-Port, VLT 1113, Malta",
+    "query_used": "St John's Co-Cathedral, Valletta, Malta"
+  },
+  "st.georges beach|Pembroke": null,
+  "mdina|Attard": {
+    "lat": 35.8876535,
+    "lon": 14.4345807,
+    "display_name": "Triq l-Imdina, \u0126'Attard, Re\u0121jun tat-Tramuntana, ATD 1433, Malta",
+    "query_used": "Mdina, Attard, Malta"
+  },
+  "salina|Naxxar": {
+    "lat": 35.9460559,
+    "lon": 14.4229619,
+    "display_name": "Salina Nature Park, In-Naxxar, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "Salina, Naxxar, Malta"
+  },
+  "president\u2019s palace|Valletta": null,
+  "bugibba|Bugibba": {
+    "lat": 35.9487277,
+    "lon": 14.4095572,
+    "display_name": "Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "Bugibba, Bugibba, Malta"
+  },
+  "mosta football ground|Mosta": {
+    "lat": 35.9046869,
+    "lon": 14.4346099,
+    "display_name": "Il-Grawnd ta' Charles Abela, Triq il-Manwella, Tad-Daqqaq, Ta' Mlit, Il-Mosta, Re\u0121jun tat-Tramuntana, MST 9017, Malta",
+    "query_used": "Mosta football ground, Mosta, Malta"
+  },
+  "bugibba promenade|Bugibba": {
+    "lat": 35.9492981,
+    "lon": 14.4070138,
+    "display_name": "Saint Paul's shipwreck on Malta, Dawret il-G\u017cejjer, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 3256, Malta",
+    "query_used": "Bugibba promenade, Bugibba, Malta"
+  },
+  "qui-si-sana|Sliema": {
+    "lat": 35.9104675,
+    "lon": 14.5104954,
+    "display_name": "Qui Si Sana, Ix-Xatt ta' Qui-si-Sana, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 3112, Malta",
+    "query_used": "Qui-Si-Sana, Sliema, Malta"
+  },
+  "victoria gardens|Gozo - Victoria": null,
+  "zonqor area|Marsascala": null,
+  "santa venera|Birkirkara": {
+    "lat": 35.8890022,
+    "lon": 14.4712489,
+    "display_name": "Methode Electronics Malta, Triq l-G\u0127olja, Birkirkara, Re\u0121jun tal-Lvant, CBD 3020, Malta",
+    "query_used": "Santa Venera, Birkirkara, Malta"
+  },
+  "st george's area|Qormi": null,
+  "st.peters area|Zabbar": null,
+  "marsalforn|Gozo - Marsalforn": {
+    "lat": 36.0613833,
+    "lon": 14.2551875,
+    "display_name": "Triq Marsalforn, Marsalforn, I\u017c-\u017bebbu\u0121, Re\u0121jun G\u0127awdex, XRA 1521, Malta",
+    "query_used": "Marsalforn, Gozo - Marsalforn, Malta"
+  },
+  "main road of hamrun|Hamrun": null,
+  "xghajra|Zabbar": {
+    "lat": 35.8778952,
+    "lon": 14.5409137,
+    "display_name": "Triq ix-Xg\u0127ajra, Qasam tad-Djar ta' Bulebel, \u0126a\u017c-\u017babbar, Re\u0121jun tal-Port, ZBR 1017, Malta",
+    "query_used": "Xghajra, Zabbar, Malta"
+  },
+  "tal-virt\u00f9|Rabat": {
+    "lat": 35.8736417,
+    "lon": 14.3996814,
+    "display_name": "Tal-Virt\u00f9, Ir-Rabat, Re\u0121jun tal-Punent, RBT 2653, Malta",
+    "query_used": "Tal-Virt\u00f9, Rabat, Malta"
+  },
+  "strand promenade|Sliema": null,
+  "ta' xbiex marina|Gzira": null,
+  "st. paul's bay|Bugibba": {
+    "lat": 35.9412218,
+    "lon": 14.4198165,
+    "display_name": "Bird Park Malta, Triq tal-Imdawra, Burmarrad, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, NXR 6057, Malta",
+    "query_used": "St. Paul's Bay, Bugibba, Malta"
+  },
+  "st thomas bay|Marsascala": {
+    "lat": 35.8529121,
+    "lon": 14.5687119,
+    "display_name": "Il-Bajja ta' San Tumas, MSK 3043, Malta",
+    "query_used": "St Thomas Bay, Malta"
+  },
+  "x-jerma palace hotel|Marsascala": null,
+  "sannat cliffs|Gozo - Sannat": {
+    "lat": 36.0218261,
+    "lon": 14.2248205,
+    "display_name": "Sannat Cliffs, Il-Munxar, Re\u0121jun G\u0127awdex, XLN 1101, Malta",
+    "query_used": "Sannat Cliffs, Malta"
+  },
+  "st. peter\u2019s|Zabbar": {
+    "lat": 35.8857324,
+    "lon": 14.5408355,
+    "display_name": "Il-Batterija ta' San Pietru, Triq San Leonardu, \u0126a\u017c-\u017babbar, Re\u0121jun tal-Port, SCM 1001, Malta",
+    "query_used": "St. Peter\u2019s, Zabbar, Malta"
+  },
+  "l/o kalkara|Xghajra": {
+    "lat": 35.8919482,
+    "lon": 14.5254053,
+    "display_name": "Triq l-Isptar Navali, Il-Kalkara, Re\u0121jun tal-Port, KKR 1320, Malta",
+    "query_used": "l/o Kalkara, Malta"
+  },
+  "ta' xbiex|Gzira": {
+    "lat": 35.9016954,
+    "lon": 14.4929062,
+    "display_name": "Ta' Xbiex - Enrico, Triq l-Imsida, Il-G\u017cira, Re\u0121jun tal-Lvant, XBX 1407, Malta",
+    "query_used": "Ta' Xbiex, Gzira, Malta"
+  },
+  "university of malta|Gzira": {
+    "lat": 35.9020939,
+    "lon": 14.4834634,
+    "display_name": "L-Universit\u00e0 ta' Malta, Il-Kwadranglu tal-Universit\u00e0, L-Imsida, Re\u0121jun tal-Lvant, MSD 2080, Malta",
+    "query_used": "University of Malta, Malta"
+  },
+  "st peter's|Zabbar": {
+    "lat": 35.8857324,
+    "lon": 14.5408355,
+    "display_name": "Il-Batterija ta' San Pietru, Triq San Leonardu, \u0126a\u017c-\u017babbar, Re\u0121jun tal-Port, SCM 1001, Malta",
+    "query_used": "St Peter's, Zabbar, Malta"
+  },
+  "zebbiegh|Mgarr": {
+    "lat": 35.919825,
+    "lon": 14.3763807,
+    "display_name": "I\u017c-\u017bebbieg\u0127, L-Im\u0121arr, Re\u0121jun tat-Tramuntana, MGR 1502, Malta",
+    "query_used": "Zebbiegh, Mgarr, Malta"
+  },
+  "qawra promenade|Qawra": {
+    "lat": 35.9586039,
+    "lon": 14.4231545,
+    "display_name": "Malta National Aquarium, Triq it-Trun\u010biera, Il-Qawra, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 1500, Malta",
+    "query_used": "Qawra promenade, Qawra, Malta"
+  },
+  "mensija|San Gwann": {
+    "lat": 35.9090718,
+    "lon": 14.4783525,
+    "display_name": "Triq tal-Mensija, San \u0120wann, Re\u0121jun tat-Tramuntana, SGN 9030, Malta",
+    "query_used": "Mensija, San Gwann, Malta"
+  },
+  "ta\u2019 \u010ben\u010b cliffs|Gozo - Sannat": {
+    "lat": 36.0139281,
+    "lon": 14.2557258,
+    "display_name": "Ta' \u010aen\u010b Cliff, Ta' Sannat, Re\u0121jun G\u0127awdex, Malta",
+    "query_used": "Ta\u2019 \u010aen\u010b cliffs, Gozo - Sannat, Malta"
+  },
+  "st. thomas|Marsascala": {
+    "lat": 35.8586605,
+    "lon": 14.5666233,
+    "display_name": "Kulle\u0121\u0121 San Tumas, Triq il-Lampuka, Wied il-G\u0127ajn, Re\u0121jun tan-Nofsinhar, MSK 3043, Malta",
+    "query_used": "St. Thomas, Marsascala, Malta"
+  },
+  "zonqor national park - tal inwadar nature park|Zabbar": null,
+  "dingli cliffs|Dingli": {
+    "lat": 35.8548318,
+    "lon": 14.3774287,
+    "display_name": "L-Irdum ta\u2019 \u0126ad-Dingli, \u0126ad-Dingli, Re\u0121jun tal-Punent, Malta",
+    "query_used": "Dingli Cliffs, Dingli, Malta"
+  },
+  "valletta|Floriana": {
+    "lat": 35.8953842,
+    "lon": 14.5070344,
+    "display_name": "The Phoenicia, Vjal ir-Re Dwardu VII, Il-Furjana, Re\u0121jun tal-Port, FRN 1400, Malta",
+    "query_used": "Valletta, Floriana, Malta"
+  },
+  "resident\u2019s plaza|Kalkara": null,
+  "san gorg area|Birzebbuga": null,
+  "birgu waterfront|Cospicua": {
+    "lat": 35.8905129,
+    "lon": 14.51922,
+    "display_name": "Il-Pont tax-Xatt tal-Birgu, Il-Birgu, Re\u0121jun tal-Port, BRG 1721, Malta",
+    "query_used": "Birgu Waterfront, Malta"
+  },
+  "promenade|Birzebbuga": {
+    "lat": 35.8296275,
+    "lon": 14.5311122,
+    "display_name": "Dawret il-Qalb Imqaddsa, Il-Qajjenza, Bir\u017cebbu\u0121a, Re\u0121jun tan-Nofsinhar, BBG 1651, Malta",
+    "query_used": "promenade, Birzebbuga, Malta"
+  },
+  "st paul's bay|Bugibba": {
+    "lat": 35.9412218,
+    "lon": 14.4198165,
+    "display_name": "Bird Park Malta, Triq tal-Imdawra, Burmarrad, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, NXR 6057, Malta",
+    "query_used": "ST PAUL'S BAY, Bugibba, Malta"
+  },
+  "ta'xbiex marina|Msida": null,
+  "the ta'xbiex marina|Msida": null,
+  "xaghra village square|Gozo - Xaghra": null,
+  "st.thomas bay|Marsascala": {
+    "lat": 35.8529121,
+    "lon": 14.5687119,
+    "display_name": "Il-Bajja ta' San Tumas, MSK 3043, Malta",
+    "query_used": "St.Thomas Bay, Malta"
+  },
+  "\u0127al farru\u0121|Qormi": {
+    "lat": 35.8642539,
+    "lon": 14.4818547,
+    "display_name": "\u0126al Farru\u0121 - Schinas, Triq \u0126al Qormi, \u0126al Luqa, Re\u0121jun tan-Nofsinhar, LQA 3301, Malta",
+    "query_used": "\u0126al Farru\u0121, Qormi, Malta"
+  },
+  "msida waterfront|Msida": null,
+  "buskett|Dingli": {
+    "lat": 35.8664975,
+    "lon": 14.3954217,
+    "display_name": "Triq il-Buskett, \u0126ad-Dingli, Re\u0121jun tal-Punent, RBT 2705, Malta",
+    "query_used": "Buskett, Dingli, Malta"
+  },
+  "exiles beach|Sliema": {
+    "lat": 35.9184304,
+    "lon": 14.4987241,
+    "display_name": "Exiles Club, Triq it-Torri, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1601, Malta",
+    "query_used": "Exiles beach, Sliema, Malta"
+  },
+  "waterfront|Floriana": {
+    "lat": 35.8900644,
+    "lon": 14.5079974,
+    "display_name": "Il-Waterfront tal-Belt, Il-Furjana, Re\u0121jun tal-Port, FRN 1913, Malta",
+    "query_used": "waterfront, Floriana, Malta"
+  },
+  "the three cities|Senglea": {
+    "lat": 35.8849491,
+    "lon": 14.5235737,
+    "display_name": "Discover the Three Cities, Triq il-\u0120ublew tal-Fidda, Bormla, Re\u0121jun tal-Port, BRG 1810, Malta",
+    "query_used": "The Three Cities, Malta"
+  },
+  "st. paul's bay main road|St Paul's Bay": null,
+  "mellieha bay|Mellieha": {
+    "lat": 35.9709599,
+    "lon": 14.3497905,
+    "display_name": "Il-Bajja tal-G\u0127adira, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "Mellieha Bay, Mellieha, Malta"
+  },
+  "shoreline residences|Kalkara": null,
+  "the shoreline|Kalkara": {
+    "lat": 35.8921093,
+    "lon": 14.5415285,
+    "display_name": "The Shoreline Mall, Triq Santu Rokku, Smart City Malta, Il-Kalkara, Re\u0121jun tal-Port, SCM 1001, Malta",
+    "query_used": "The Shoreline, Kalkara, Malta"
+  },
+  "main square|Birkirkara": {
+    "lat": 35.8878463,
+    "lon": 14.5222508,
+    "display_name": "Main Square, Triq il-Lbi\u010b, Il-Birgu, Re\u0121jun tal-Port, BRG 1425, Malta",
+    "query_used": "Main Square, Malta"
+  },
+  "the gardens|St Julian's": {
+    "lat": 36.0459971,
+    "lon": 14.240304,
+    "display_name": "The Ditch Gardens, Ir-Rabat, Re\u0121jun G\u0127awdex, VCT 1831, Malta",
+    "query_used": "The Gardens, Malta"
+  },
+  "gillieru area|St Paul's Bay": null,
+  "balluta and spinola|St Julian's": null,
+  "selmun|Mellieha": {
+    "lat": 35.9560275,
+    "lon": 14.3789395,
+    "display_name": "Is-Selmun, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, SPB 9028, Malta",
+    "query_used": "Selmun, Mellieha, Malta"
+  },
+  "balluta area|Sliema": null,
+  "ta\u2019 cenc cliffs|Gozo - Sannat": {
+    "lat": 36.0139281,
+    "lon": 14.2557258,
+    "display_name": "Ta' \u010aen\u010b Cliff, Ta' Sannat, Re\u0121jun G\u0127awdex, Malta",
+    "query_used": "Ta\u2019 Cenc cliffs, Gozo - Sannat, Malta"
+  },
+  "qawra church|Qawra": null,
+  "qawra school|Qawra": null,
+  "verdala terraces|Rabat": {
+    "lat": 35.8778133,
+    "lon": 14.4036123,
+    "display_name": "Verdala Terraces, Tal-Virt\u00f9, Ir-Rabat, Re\u0121jun tal-Punent, RBT 2418, Malta",
+    "query_used": "Verdala Terraces, Rabat, Malta"
+  },
+  "mosta's main square|Mosta": null,
+  "imriehel|Santa Venera": {
+    "lat": 35.8890022,
+    "lon": 14.4712489,
+    "display_name": "Methode Electronics Malta, Triq Pietru Dacoutros, L-Imrie\u0127el, Birkirkara, Re\u0121jun tal-Lvant, SVR 9030, Malta",
+    "query_used": "Imriehel, Santa Venera, Malta"
+  },
+  "ta\u2019 l-ibrag|Swieqi": {
+    "lat": 35.8358636,
+    "lon": 14.4877347,
+    "display_name": "Triq l-Ibra\u0121, \u0126al Safi, Re\u0121jun tal-Punent, ZRQ 1089, Malta",
+    "query_used": "Ta\u2019 l-Ibrag, Malta"
+  },
+  "tigne\u2019 seafront|Sliema": {
+    "lat": 35.9067768,
+    "lon": 14.5091588,
+    "display_name": "Ix-Xatt ta' Tign\u00e9, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 3052, Malta",
+    "query_used": "Tigne\u2019 Seafront, Sliema, Malta"
+  },
+  "st thomas\u2019s bay|Marsascala": null,
+  "st julians|Swieqi": {
+    "lat": 35.9172612,
+    "lon": 14.4931084,
+    "display_name": "Saint Julians Pharmacy, Triq \u0120or\u0121 Bor\u0121 Olivier, San \u0120iljan, Re\u0121jun tal-Lvant, STJ 3019, Malta",
+    "query_used": "St Julians, Malta"
+  },
+  "il-mizieb|Mellieha": {
+    "lat": 35.9493976,
+    "lon": 14.3655869,
+    "display_name": "Il-Mi\u017cieb, Il-Manikata, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, MLH 1472, Malta",
+    "query_used": "Il-Mizieb, Mellieha, Malta"
+  },
+  "university and mater dei|Msida": null,
+  "border to st.venera|Hamrun": null,
+  "tign\u00e9 point|Sliema": {
+    "lat": 35.9076335,
+    "lon": 14.5106248,
+    "display_name": "The Point, Ix-Xatt ta' Qui-si-Sana, Tas-Sliema, Re\u0121jun tal-Lvant, TPO 0001, Malta",
+    "query_used": "Tign\u00e9 Point, Sliema, Malta"
+  },
+  "piazza san gorg|Valletta": null,
+  "tas-salib|Rabat": {
+    "lat": 35.9012689,
+    "lon": 14.3787367,
+    "display_name": "Triq Tas-Salib, Ir-Rabat, Re\u0121jun tal-Punent, MGR 1502, Malta",
+    "query_used": "Tas-Salib, Rabat, Malta"
+  },
+  "mellieha parish church|Mellieha": {
+    "lat": 35.9607987,
+    "lon": 14.3608681,
+    "display_name": "Knisja Ar\u010bipretali ta\u2019 Marija Bambina, Triq is-Santwarju, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, MLH 1245, Malta",
+    "query_used": "Mellieha Parish Church, Mellieha, Malta"
+  },
+  "main parish church|Hamrun": null,
+  "msida marina creek|Msida": null,
+  "kalkara creek|Kalkara": null,
+  "burmarrad|Naxxar": {
+    "lat": 35.9279256,
+    "lon": 14.4330167,
+    "display_name": "Qasam Industrijali Burmarrad, Y&P Complex, In-Naxxar, Re\u0121jun tat-Tramuntana, NXR 6345, Malta",
+    "query_used": "Burmarrad, Naxxar, Malta"
+  },
+  "nadur\u2019s main square|Gozo - Nadur": null,
+  "st george\u2019s bay|St Julian's": {
+    "lat": 35.9287656,
+    "lon": 14.490953,
+    "display_name": "Corinthia (Saint George's Bay), Ix-Xatt ta' San \u0120or\u0121, San \u0120iljan, Re\u0121jun tal-Lvant, STJ 3301, Malta",
+    "query_used": "St George\u2019s Bay, St Julian's, Malta"
+  },
+  "st. george's bay|Birzebbuga": {
+    "lat": 35.8320127,
+    "lon": 14.5306118,
+    "display_name": "Il-Bajja ta' San \u0120or\u0121, Il-Qajjenza, Bir\u017cebbu\u0121a, Re\u0121jun tan-Nofsinhar, Malta",
+    "query_used": "St. George's Bay, Birzebbuga, Malta"
+  },
+  "parish church|Birkirkara": {
+    "lat": 35.8999497,
+    "lon": 14.4653383,
+    "display_name": "Sant' Elena, Triq Mike Pulis, L-Imrie\u0127el, Birkirkara, Re\u0121jun tal-Lvant, BKR 2502, Malta",
+    "query_used": "parish church, Birkirkara, Malta"
+  },
+  "ta' paris|Birkirkara": {
+    "lat": 35.8983386,
+    "lon": 14.4729027,
+    "display_name": "Qasam tad-Djar Ta' Paris, L-Imrie\u0127el, Birkirkara, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "Ta' Paris, Birkirkara, Malta"
+  },
+  "uca|Rabat": null,
+  "tas-silg|Marsaxlokk": {
+    "lat": 35.84589,
+    "lon": 14.5518907,
+    "display_name": "Tas-Sil\u0121, Triq Xrobb l-G\u0127a\u0121in, Marsaxlokk, Re\u0121jun tan-Nofsinhar, MXK 9044, Malta",
+    "query_used": "Tas-Silg, Marsaxlokk, Malta"
+  },
+  "cottonera waterfront|Cospicua": null,
+  "ramla bay|Gozo - Nadur": {
+    "lat": 36.0605023,
+    "lon": 14.2831037,
+    "display_name": "Information centre and ranger station, Triq ir-Ramla, Ix-Xag\u0127ra, Re\u0121jun G\u0127awdex, XRA 2706, Malta",
+    "query_used": "Ramla Bay, Gozo - Nadur, Malta"
+  },
+  "blue grotto|Zurrieq": {
+    "lat": 35.8212727,
+    "lon": 14.456547,
+    "display_name": "Ta\u0127t il-\u0126nejja, Triq Congr\u00e8ve, Wied i\u017c-\u017burrieq, Il-Qrendi, Re\u0121jun tal-Punent, QRD 3043, Malta",
+    "query_used": "Blue Grotto, Zurrieq, Malta"
+  },
+  "mosta church|Mosta": {
+    "lat": 35.910083,
+    "lon": 14.4258096,
+    "display_name": "Ba\u017cilika ta' Santa Marija, Pjazza Rotunda, Ta' Redusa, Ta' Mlit, Il-Mosta, Re\u0121jun tat-Tramuntana, MST 9058, Malta",
+    "query_used": "Mosta Church, Mosta, Malta"
+  },
+  "ghadira|Mellieha": {
+    "lat": 35.9708754,
+    "lon": 14.3488805,
+    "display_name": "Ir-Riserva Naturali tal-G\u0127adira, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "Ghadira, Mellieha, Malta"
+  },
+  "ghadira (tas-sellum)|Mellieha": null,
+  "xlendi bay|Gozo - Fontana": {
+    "lat": 36.0298848,
+    "lon": 14.2161926,
+    "display_name": "Il-Bajja tax-Xlendi, Ix-Xlendi, SNT 9020, Malta",
+    "query_used": "Xlendi Bay, Malta"
+  },
+  "hestine|Mosta": null,
+  "gharb square|Gozo - Gharb": null,
+  "nadur parish square|Gozo - Nadur": null,
+  "university|Gzira": {
+    "lat": 35.9013858,
+    "lon": 14.487401,
+    "display_name": "University Football Grounds, Triq l-Universit\u00e0, L-Imsida, Re\u0121jun tal-Lvant, GZR 1712, Malta",
+    "query_used": "University, Gzira, Malta"
+  },
+  "presidents palace|Rabat": null,
+  "ora residences|St Julian's": {
+    "lat": 35.9278008,
+    "lon": 14.488699,
+    "display_name": "Hard Rock Hotel / ORA Residences, San \u0120iljan, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "ORA Residences, St Julian's, Malta"
+  },
+  "mellieha church|Mellieha": {
+    "lat": 35.9603687,
+    "lon": 14.3612327,
+    "display_name": "Santwarju tal-Madonna tal-Mellie\u0127a, Pjazza \u0120wanni Pawlu II, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, MLH 2317, Malta",
+    "query_used": "Mellieha Church, Mellieha, Malta"
+  },
+  "balzan area|Birkirkara": null,
+  "church|Bahar Ic-Caghaq": {
+    "lat": 35.8712491,
+    "lon": 14.4421878,
+    "display_name": "Il-Knisja ta' San Filep t'Agira, I\u017c-\u017bebbu\u0121, Triq il-Knisja, \u0126a\u017c-\u017bebbu\u0121, \u0126al Dwin, \u0126a\u017c-\u017bebbu\u0121, Re\u0121jun tal-Punent, ZBG 1011, Malta",
+    "query_used": "church, Malta"
+  },
+  "village core|Balzan": null,
+  "handaq|Qormi": {
+    "lat": 35.8701712,
+    "lon": 14.4691903,
+    "display_name": "Tal-\u0126andaq, \u0126al Qormi, Re\u0121jun tan-Nofsinhar, QRM 3613, Malta",
+    "query_used": "Handaq, Qormi, Malta"
+  },
+  "gardjola gardens|Senglea": {
+    "lat": 35.890474,
+    "lon": 14.5141631,
+    "display_name": "Gardjola Gardens, L-Isla, Re\u0121jun tal-Port, Malta",
+    "query_used": "Gardjola Gardens, Senglea, Malta"
+  },
+  "sliema tower road|Sliema": {
+    "lat": 35.9144329,
+    "lon": 14.5070729,
+    "display_name": "Malta Blue Diving Shop, Triq it-Torri, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1604, Malta",
+    "query_used": "Sliema Tower Road, Sliema, Malta"
+  },
+  "xaghra belvedere|Gozo - Xaghra": null,
+  "between attard and lija|Attard": null,
+  "st venera|Hamrun": {
+    "lat": 35.886575,
+    "lon": 14.4872239,
+    "display_name": "Il-Knisja ta' San Gejtanu, Triq il-Kbira San \u0120u\u017cepp, Il-\u0126amrun, Re\u0121jun tan-Nofsinhar, SVR 1759, Malta",
+    "query_used": "St Venera, Hamrun, Malta"
+  },
+  "scott's supermarket|Attard": null,
+  "san pawl tat-targa|Birguma": {
+    "lat": 35.9207237,
+    "lon": 14.4408857,
+    "display_name": "San Pawl tat-Tar\u0121a, In-Naxxar, Re\u0121jun tat-Tramuntana, NXR 1560, Malta",
+    "query_used": "San Pawl tat-Targa, Malta"
+  },
+  "st. paul\u2019s bay|Bugibba": {
+    "lat": 35.9412218,
+    "lon": 14.4198165,
+    "display_name": "Bird Park Malta, Triq tal-Imdawra, Burmarrad, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, NXR 6057, Malta",
+    "query_used": "St. Paul\u2019s Bay, Bugibba, Malta"
+  },
+  "tign\u00e9 seafront|Sliema": {
+    "lat": 35.9067768,
+    "lon": 14.5091588,
+    "display_name": "Ix-Xatt ta' Tign\u00e9, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 3052, Malta",
+    "query_used": "Tign\u00e9 Seafront, Sliema, Malta"
+  },
+  "sliema seafront promenade|Sliema": null,
+  "mater dei hospital|Birkirkara": {
+    "lat": 35.901894,
+    "lon": 14.4766021,
+    "display_name": "Sptar Mater Dei, Triq Dun Karm, Birkirkara, Re\u0121jun tal-Lvant, BKR 4019, Malta",
+    "query_used": "Mater Dei Hospital, Birkirkara, Malta"
+  },
+  "tal-virtu|Rabat": {
+    "lat": 35.8736417,
+    "lon": 14.3996814,
+    "display_name": "Tal-Virt\u00f9, Ir-Rabat, Re\u0121jun tal-Punent, RBT 2653, Malta",
+    "query_used": "Tal-Virtu, Rabat, Malta"
+  },
+  "birgu|Vittoriosa": {
+    "lat": 35.8877699,
+    "lon": 14.5207842,
+    "display_name": "Mu\u017cew Marittimu ta' Malta, Triq San Lawrenz, Il-Birgu, Re\u0121jun tal-Port, BRG 1721, Malta",
+    "query_used": "Birgu, Vittoriosa, Malta"
+  },
+  "bugibba square|Bugibba": {
+    "lat": 35.9514751,
+    "lon": 14.4139368,
+    "display_name": "McDonald's, Misra\u0127 il-Bajja, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 2511, Malta",
+    "query_used": "Bugibba Square, Bugibba, Malta"
+  },
+  "tal- papa|Birzebbuga": {
+    "lat": 35.8201486,
+    "lon": 14.524584,
+    "display_name": "Tal-Papa, Bir\u017cebbu\u0121a, Re\u0121jun tan-Nofsinhar, Malta",
+    "query_used": "tal- Papa, Birzebbuga, Malta"
+  },
+  "marina seafront|Msida": null,
+  "piet\u00e0 seafront|Pieta": null,
+  "xemxija heights|Xemxija": null,
+  "fleur de lys|Birkirkara": {
+    "lat": 35.892982,
+    "lon": 14.4716185,
+    "display_name": "Fleur-de-Lys, Birkirkara, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "Fleur De Lys, Birkirkara, Malta"
+  },
+  "birkirkara|Mriehel": {
+    "lat": 35.8994577,
+    "lon": 14.4649552,
+    "display_name": "Birkirkara, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "Birkirkara, Malta"
+  },
+  "ta' libragg church|Ta' l-Ibragg": null,
+  "swatar|Birkirkara": {
+    "lat": 35.8983464,
+    "lon": 14.4780686,
+    "display_name": "Triq is-Swatar, L-Imsida, Re\u0121jun tal-Lvant, MSD 2250, Malta",
+    "query_used": "Swatar, Birkirkara, Malta"
+  },
+  "mgarr harbour|Gozo - Ghajnsielem": null,
+  "san thomas area|Marsascala": null,
+  "strand seafront|Gzira": null,
+  "the ferries|Sliema": null,
+  "taz-zokkrija|Mosta": null,
+  "harbour|Gozo - Ghajnsielem": {
+    "lat": 35.8962147,
+    "lon": 14.5140917,
+    "display_name": "ION Harbour By Simon Rogan, 11, Is-Sur ta' Santa Barbara, L-Ar\u010bipierku, Il-Belt Valletta, Re\u0121jun tal-Port, VLT 1232, Malta",
+    "query_used": "harbour, Malta"
+  },
+  "fekruna beach|Xemxija": null,
+  "the point|Sliema": {
+    "lat": 35.9076335,
+    "lon": 14.5106248,
+    "display_name": "The Point, Ix-Xatt ta' Qui-si-Sana, Tas-Sliema, Re\u0121jun tal-Lvant, TPO 0001, Malta",
+    "query_used": "THE POINT, Sliema, Malta"
+  },
+  "zonqor|Marsascala": {
+    "lat": 35.8682775,
+    "lon": 14.5642922,
+    "display_name": "Batterija ta\u017c-\u017bonqor, Triq il-Batterija ta\u017c-\u017bonqor, Wied il-G\u0127ajn, Re\u0121jun tan-Nofsinhar, MSK 1015, Malta",
+    "query_used": "Zonqor, Marsascala, Malta"
+  },
+  "birguma|Birguma": {
+    "lat": 35.924616,
+    "lon": 14.4444889,
+    "display_name": "Triq Birguma, San Pawl tat-Tar\u0121a, In-Naxxar, Re\u0121jun tat-Tramuntana, GHR 1305, Malta",
+    "query_used": "Birguma, Malta"
+  },
+  "the square|Bugibba": null,
+  "hal-farrug|Luqa": {
+    "lat": 35.8548625,
+    "lon": 14.4669283,
+    "display_name": "SR Technics Malta, Triq \u0126al Farru\u0121, \u0126al Luqa, Re\u0121jun tan-Nofsinhar, LQA 1039, Malta",
+    "query_used": "Hal-Farrug, Luqa, Malta"
+  },
+  "bingemma|Bingemma": {
+    "lat": 35.9105969,
+    "lon": 14.3743798,
+    "display_name": "Bin\u0121emma, L-Im\u0121arr, Re\u0121jun tat-Tramuntana, MGR 1502, Malta",
+    "query_used": "Bingemma, Malta"
+  },
+  "san pawl tat-tar\u0121a|Naxxar": {
+    "lat": 35.9207237,
+    "lon": 14.4408857,
+    "display_name": "San Pawl tat-Tar\u0121a, In-Naxxar, Re\u0121jun tat-Tramuntana, NXR 1560, Malta",
+    "query_used": "San Pawl tat-Tar\u0121a, Naxxar, Malta"
+  },
+  "vittoriosa marina|Cospicua": null,
+  "romeo romano public gardens|Santa Venera": null,
+  "mosta dome|Mosta": {
+    "lat": 35.910083,
+    "lon": 14.4258096,
+    "display_name": "Ba\u017cilika ta' Santa Marija, Pjazza Rotunda, Ta' Redusa, Ta' Mlit, Il-Mosta, Re\u0121jun tat-Tramuntana, MST 9058, Malta",
+    "query_used": "Mosta Dome, Mosta, Malta"
+  },
+  "seafront promenade|Sliema": null,
+  "kappara|Kappara": {
+    "lat": 35.9057122,
+    "lon": 14.4772209,
+    "display_name": "Ir-Razzett ta' Xindi, Triq San \u0120iljan, San \u0120wann, Re\u0121jun tat-Tramuntana, SGN 2416, Malta",
+    "query_used": "Kappara, Malta"
+  },
+  "strand|Gzira": {
+    "lat": 35.9082085,
+    "lon": 14.5011922,
+    "display_name": "Ix-Xatt tal-G\u017cira, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1020, Malta",
+    "query_used": "Strand, Gzira, Malta"
+  },
+  "romeo romano garden|Santa Venera": null,
+  "casa verde|Qawra": null,
+  "ta' qali|Attard": {
+    "lat": 35.8923492,
+    "lon": 14.4196785,
+    "display_name": "Ta' Qali, \u0126'Attard, Re\u0121jun tat-Tramuntana, ATD 4000, Malta",
+    "query_used": "Ta' Qali, Attard, Malta"
+  },
+  "st paul\u2019s bay seafront promenade|St Paul's Bay": null,
+  "smart city|Kalkara": {
+    "lat": 35.8912447,
+    "lon": 14.5401632,
+    "display_name": "Smart City Malta, Il-Kalkara, Re\u0121jun tal-Port, SCM 1001, Malta",
+    "query_used": "Smart City, Kalkara, Malta"
+  },
+  "st helen's basilica|Birkirkara": null,
+  "malta international airport|Ghaxaq": {
+    "lat": 35.84741,
+    "lon": 14.4922871,
+    "display_name": "Ajruport Internazzjonali ta' Malta, Vjal it-Torri, Il-Gudja, Re\u0121jun tan-Nofsinhar, LQA 4000, Malta",
+    "query_used": "Malta International Airport, Malta"
+  },
+  "chadwick lakes|Rabat": {
+    "lat": 35.8916065,
+    "lon": 14.3892193,
+    "display_name": "Chadwick Lakes, Triq ta' Slampa, Ir-Rabat, Re\u0121jun tal-Punent, RBT 4017, Malta",
+    "query_used": "Chadwick Lakes, Rabat, Malta"
+  },
+  "kennedy grove|Qawra": {
+    "lat": 35.9447572,
+    "lon": 14.4185779,
+    "display_name": "Kennedy Grove, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "Kennedy Grove, Qawra, Malta"
+  },
+  "nigret area|Zurrieq": null,
+  "pretty bay|Birzebbuga": {
+    "lat": 35.8248109,
+    "lon": 14.5293915,
+    "display_name": "Pretty Bay, Il-Qajjenza, Bir\u017cebbu\u0121a, Re\u0121jun tan-Nofsinhar, Malta",
+    "query_used": "Pretty Bay, Birzebbuga, Malta"
+  },
+  "xlendi|Gozo - Xlendi": {
+    "lat": 36.0302679,
+    "lon": 14.2171871,
+    "display_name": "Xlendi, Ix-Xlendi, Il-Munxar, Re\u0121jun G\u0127awdex, Malta",
+    "query_used": "Xlendi, Gozo - Xlendi, Malta"
+  },
+  "seafront|Bahar Ic-Caghaq": {
+    "lat": 35.9091112,
+    "lon": 14.5106012,
+    "display_name": "Ix-Xatt ta' Qui-si-Sana, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 3143, Malta",
+    "query_used": "seafront, Malta"
+  },
+  "ta\u2019 paris|Birkirkara": {
+    "lat": 35.8983386,
+    "lon": 14.4729027,
+    "display_name": "Qasam tad-Djar Ta' Paris, L-Imrie\u0127el, Birkirkara, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "Ta\u2019 Paris, Birkirkara, Malta"
+  },
+  "kempinski san lawrenz|Gozo - San Lawrenz": {
+    "lat": 36.0528846,
+    "lon": 14.2079255,
+    "display_name": "Kempinski San Lawrenz, Triq ir-Rokon, San Lawrenz, Re\u0121jun G\u0127awdex, SLZ 1040, Malta",
+    "query_used": "Kempinski San Lawrenz, Gozo - San Lawrenz, Malta"
+  },
+  "lower barrakka gardens|Valletta": null,
+  "hamrun football club|Pieta": null,
+  "m\u0121arr valley|Mgarr": null,
+  "ta\u2019 masrija|Mellieha": {
+    "lat": 35.9531318,
+    "lon": 14.3660203,
+    "display_name": "Ta' Masrija, Il-Manikata, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "Ta\u2019 Masrija, Mellieha, Malta"
+  },
+  "mater dei|Birkirkara": {
+    "lat": 35.9019175,
+    "lon": 14.4756107,
+    "display_name": "Mater Dei - Sptar 1, Triq id-Donaturi tad-Demm, L-Imsida, Re\u0121jun tal-Lvant, BKR 4019, Malta",
+    "query_used": "Mater Dei, Birkirkara, Malta"
+  },
+  "mriehel bypass|Birkirkara": {
+    "lat": 35.8910684,
+    "lon": 14.4580276,
+    "display_name": "Vjal ir-Royal Malta Artillery, L-Imrie\u0127el, Birkirkara, Re\u0121jun tal-Lvant, BZN 1708, Malta",
+    "query_used": "Mriehel Bypass, Birkirkara, Malta"
+  },
+  "corinthia palace hotel|Balzan": {
+    "lat": 35.8940433,
+    "lon": 14.4491591,
+    "display_name": "Corinthia Palace Hotel, Triq il-Linja, \u0126'Attard, Re\u0121jun tat-Tramuntana, BZN 9023, Malta",
+    "query_used": "Corinthia Palace Hotel, Malta"
+  },
+  "ora residence|St Julian's": null,
+  "marsalforn promenade|Gozo - Marsalforn": null,
+  "dingli outskirts|Dingli": null,
+  "madliena valley|Madliena": null,
+  "st. george\u2019s bay|St Julian's": {
+    "lat": 35.9287656,
+    "lon": 14.490953,
+    "display_name": "Corinthia (Saint George's Bay), Ix-Xatt ta' San \u0120or\u0121, San \u0120iljan, Re\u0121jun tal-Lvant, STJ 3301, Malta",
+    "query_used": "St. George\u2019s Bay, St Julian's, Malta"
+  },
+  "barts medical university|Gozo - Victoria": null,
+  "st, paul's bay|Qawra": {
+    "lat": 35.9482179,
+    "lon": 14.4169028,
+    "display_name": "Il-Knisja ta' San Fran\u0121isk t'Assisi, Triq Annetto Caruana, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 1147, Malta",
+    "query_used": "ST, PAUL'S BAY, Qawra, Malta"
+  },
+  "qawra|Bugibba": {
+    "lat": 35.9457541,
+    "lon": 14.4176601,
+    "display_name": "Triq il-Qawra, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 1147, Malta",
+    "query_used": "Qawra, Bugibba, Malta"
+  },
+  "ta monita|Marsascala": {
+    "lat": 35.8678317,
+    "lon": 14.5655914,
+    "display_name": "Triq ta' Monita, Wied il-G\u0127ajn, Re\u0121jun tan-Nofsinhar, MSK 1015, Malta",
+    "query_used": "Ta Monita, Marsascala, Malta"
+  },
+  "portomaso (laguna)|St Julian's": null,
+  "isla|Senglea": {
+    "lat": 35.8847631,
+    "lon": 14.5192657,
+    "display_name": "Il-Bieb tal-Isla, L-Isla, Re\u0121jun tal-Port, BML 2064, Malta",
+    "query_used": "Isla, Senglea, Malta"
+  },
+  "san pawl tat targa|Birguma": {
+    "lat": 35.9207237,
+    "lon": 14.4408857,
+    "display_name": "San Pawl tat-Tar\u0121a, In-Naxxar, Re\u0121jun tat-Tramuntana, NXR 1560, Malta",
+    "query_used": "San Pawl tat Targa, Malta"
+  },
+  "commercial centre|Sliema": null,
+  "hastings gardens|Valletta": null,
+  "san anton gardens|Attard": {
+    "lat": 35.896107,
+    "lon": 14.4481778,
+    "display_name": "Il-\u0120onna ta' Sant' Anton, \u0126'Attard, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "San Anton Gardens, Attard, Malta"
+  },
+  "ta\u2019 cenc|Gozo - Sannat": {
+    "lat": 36.021043,
+    "lon": 14.2512788,
+    "display_name": "Ta' \u010aen\u010b, Ta' Sannat, Re\u0121jun G\u0127awdex, Malta",
+    "query_used": "Ta\u2019 Cenc, Gozo - Sannat, Malta"
+  },
+  "ta\u2019 cenc area|Gozo - Sannat": null,
+  "main bus station|Marsascala": null,
+  "st. thomas bay|Marsascala": {
+    "lat": 35.8529121,
+    "lon": 14.5687119,
+    "display_name": "Il-Bajja ta' San Tumas, MSK 3043, Malta",
+    "query_used": "St. Thomas Bay, Malta"
+  },
+  "kempinski hotel|Gozo - Gharb": {
+    "lat": 36.0528846,
+    "lon": 14.2079255,
+    "display_name": "Kempinski San Lawrenz, Triq ir-Rokon, San Lawrenz, Re\u0121jun G\u0127awdex, SLZ 1040, Malta",
+    "query_used": "Kempinski Hotel, Gozo - Gharb, Malta"
+  },
+  "tign\u00e9|Sliema": {
+    "lat": 35.9066177,
+    "lon": 14.5133136,
+    "display_name": "Fort Tign\u00e9, Pjazza Tign\u00e9, Tas-Sliema, Re\u0121jun tal-Lvant, TPO 0001, Malta",
+    "query_used": "Tign\u00e9, Sliema, Malta"
+  },
+  "st. paul\u2019s grotto|Rabat": null,
+  "swimming promenade|St Paul's Bay": null,
+  "border with guardamangia|Hamrun": null,
+  "valletta port|Kalkara": {
+    "lat": 35.898226,
+    "lon": 14.513529,
+    "display_name": "Il-Biblioteka Nazzjonali, Triq it-Te\u017corerija, Il-Kamrata, Il-Belt Valletta, Re\u0121jun tal-Port, VLT 1173, Malta",
+    "query_used": "Valletta port, Malta"
+  },
+  "convenience a|Qormi": null,
+  "convenience c|Qormi": null,
+  "shoreline|Kalkara": {
+    "lat": 35.8921093,
+    "lon": 14.5415285,
+    "display_name": "The Shoreline Mall, Triq Santu Rokku, Smart City Malta, Il-Kalkara, Re\u0121jun tal-Port, SCM 1001, Malta",
+    "query_used": "Shoreline, Kalkara, Malta"
+  },
+  "pendergardens|St Julian's": {
+    "lat": 35.9215514,
+    "lon": 14.4885415,
+    "display_name": "Pendergardens, San \u0120iljan, Re\u0121jun tal-Lvant, STJ 9023, Malta",
+    "query_used": "Pendergardens, St Julian's, Malta"
+  },
+  "portomaso marina|Paceville": {
+    "lat": 35.921332,
+    "lon": 14.493064,
+    "display_name": "Portomaso Marina, Vjal Portomaso, San \u0120iljan, Re\u0121jun tal-Lvant, STJ 4011, Malta",
+    "query_used": "Portomaso Marina, Malta"
+  },
+  "manuel theatre|Valletta": null,
+  "the village|San Gwann": {
+    "lat": 35.9152071,
+    "lon": 14.4822851,
+    "display_name": "San Gawann The Village S/S, Triq il-Ba\u0127ar l-Iswed, San \u0120wann, Re\u0121jun tat-Tramuntana, SGN 1732, Malta",
+    "query_used": "The Village, San Gwann, Malta"
+  },
+  "portamaso|St Julian's": null,
+  "the tower|St Julian's": {
+    "lat": 35.9144893,
+    "lon": 14.4969662,
+    "display_name": "The Doughnut Factory, Triq it-Torri, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1600, Malta",
+    "query_used": "the Tower, St Julian's, Malta"
+  },
+  "mercury development|St Julian's": null,
+  "qawra seafront|Qawra": null,
+  "hamrun uca|Hamrun": null,
+  "quisisana|Sliema": null,
+  "polyclinic in gzira|Sliema": null,
+  "marsaxlokk seafront|Marsaxlokk": null,
+  "mgarr ferry terminal|Gozo - Ghajnsielem": {
+    "lat": 36.0243761,
+    "lon": 14.2981644,
+    "display_name": "M\u0121arr, Triq ix-Xatt, L-Im\u0121arr, G\u0127ajnsielem, Re\u0121jun G\u0127awdex, GSM 1011, Malta",
+    "query_used": "Mgarr ferry terminal, Gozo - Ghajnsielem, Malta"
+  },
+  "tigne point shopping mall|Sliema": {
+    "lat": 35.9076335,
+    "lon": 14.5106248,
+    "display_name": "The Point, Ix-Xatt ta' Qui-si-Sana, Tas-Sliema, Re\u0121jun tal-Lvant, TPO 0001, Malta",
+    "query_used": "Tigne Point shopping mall, Sliema, Malta"
+  },
+  "the hilton|St Julian's": null,
+  "gillieru bay|St Paul's Bay": {
+    "lat": 35.9494586,
+    "lon": 14.4066451,
+    "display_name": "Gillieru Harbour Hotel, Triq il-Knisja, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 3256, Malta",
+    "query_used": "Gillieru Bay, St Paul's Bay, Malta"
+  },
+  "tower road|Gzira": {
+    "lat": 35.9148787,
+    "lon": 14.497752,
+    "display_name": "Triq it-Torri, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1600, Malta",
+    "query_used": "Tower Road, Malta"
+  },
+  "manuel island|Gzira": {
+    "lat": 35.9028825,
+    "lon": 14.5049228,
+    "display_name": "Fort Manoel, Triq il-Forti Manoel, Il-G\u017cira, Re\u0121jun tal-Lvant, SLM 3011, Malta",
+    "query_used": "Manuel island, Gzira, Malta"
+  },
+  "xemxija|St Paul's Bay": {
+    "lat": 35.9490125,
+    "lon": 14.3838712,
+    "display_name": "Ix-Xemxija, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 9028, Malta",
+    "query_used": "Xemxija, St Paul's Bay, Malta"
+  },
+  "fleur- de -lys|Birkirkara": {
+    "lat": 35.892982,
+    "lon": 14.4716185,
+    "display_name": "Fleur-de-Lys, Birkirkara, Re\u0121jun tal-Lvant, Malta",
+    "query_used": "Fleur- de -Lys, Birkirkara, Malta"
+  },
+  "paceville|Paceville": {
+    "lat": 35.9227964,
+    "lon": 14.4909757,
+    "display_name": "Triq Paceville, San \u0120iljan, Re\u0121jun tal-Lvant, STJ 3070, Malta",
+    "query_used": "Paceville, Malta"
+  },
+  "near university|Msida": null,
+  "qi si sana|Sliema": null,
+  "ora development|St Julian's": null,
+  "ghadira bay|Mellieha": {
+    "lat": 35.9668741,
+    "lon": 14.352492,
+    "display_name": "Il-Bajja tal-G\u0127adira, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "Ghadira bay, Mellieha, Malta"
+  },
+  "parish church of san nikola|Siggiewi": null,
+  "sliema-gzira border|Sliema": null,
+  "palm valley area|Marsascala": null,
+  "birgu seafront|Cospicua": null,
+  "birgu yacht marina|Cospicua": null,
+  "junior college and st. luke's hospital|Pieta": null,
+  "garden pjazza|St Paul's Bay": {
+    "lat": 35.9081225,
+    "lon": 14.5113427,
+    "display_name": "Garden Battery, Pjazza Tign\u00e9, Tas-Sliema, Re\u0121jun tal-Lvant, TPO 0001, Malta",
+    "query_used": "Garden Pjazza, Malta"
+  },
+  "paola\u2013fgura border|Paola": null,
+  "mensija villa area|St Julian's": null,
+  "sirens area|St Paul's Bay": null,
+  "village square|Gozo - Ghajnsielem": null,
+  "bellavista|Marsascala": {
+    "lat": 35.8627198,
+    "lon": 14.5562518,
+    "display_name": "Marsaskala - Bellavista, Triq Sant' Antnin, Wied il-G\u0127ajn, Re\u0121jun tan-Nofsinhar, MSK 4070, Malta",
+    "query_used": "Bellavista, Marsascala, Malta"
+  },
+  "pender place|St Julian's": null,
+  "main shopping area|Sliema": null,
+  "bronja area|Zurrieq": null,
+  "iklin valley|Naxxar": null,
+  "nigret|Rabat": {
+    "lat": 36.0356991,
+    "lon": 14.2407088,
+    "display_name": "Tan-Nigret, Rabat, Ir-Rabat, Re\u0121jun G\u0127awdex, VCT 2520, Malta",
+    "query_used": "Nigret, Rabat, Malta"
+  },
+  "mriehel|Balzan": {
+    "lat": 35.893662,
+    "lon": 14.45815,
+    "display_name": "Skola Sekondarja Mrie\u0127el, Triq Pietru Pawl Castagna, Birkirkara, Re\u0121jun tat-Tramuntana, BZN 1708, Malta",
+    "query_used": "Mriehel, Balzan, Malta"
+  },
+  "hamrun|Marsa": {
+    "lat": 35.8816071,
+    "lon": 14.4851606,
+    "display_name": "Marsa-\u0126amrun Bypass, Il-\u0126amrun, Re\u0121jun tan-Nofsinhar, QRM 9061, Malta",
+    "query_used": "HAMRUN, Marsa, Malta"
+  },
+  "santa lucija|Gozo - Kercem": {
+    "lat": 36.0432761,
+    "lon": 14.217684,
+    "display_name": "Santa Lu\u010bija, Ta' Ker\u010bem, Re\u0121jun G\u0127awdex, XLN 1040, Malta",
+    "query_used": "Santa Lucija, Gozo - Kercem, Malta"
+  },
+  "the quad|Mriehel": {
+    "lat": 35.8912346,
+    "lon": 14.4591399,
+    "display_name": "The Quad Central, L-Imrie\u0127el, Birkirkara, Re\u0121jun tal-Lvant, CBD 1040, Malta",
+    "query_used": "the Quad, Malta"
+  },
+  "mgarr square|Mgarr": null,
+  "villa area|Attard": null,
+  "zaha hadid mercury towers|St Julian's": null,
+  "hilltop gardens|Naxxar": {
+    "lat": 35.911987,
+    "lon": 14.4484105,
+    "display_name": "Hilltop Gardens, Triq l-Inkwina, Is-Sg\u0127ajtar, In-Naxxar, Re\u0121jun tat-Tramuntana, NXR 1950, Malta",
+    "query_used": "Hilltop Gardens, Naxxar, Malta"
+  },
+  "villa areea|Gozo - Xlendi": null,
+  "ta' monita|Marsascala": {
+    "lat": 35.8678317,
+    "lon": 14.5655914,
+    "display_name": "Triq ta' Monita, Wied il-G\u0127ajn, Re\u0121jun tan-Nofsinhar, MSK 1015, Malta",
+    "query_used": "Ta' Monita, Marsascala, Malta"
+  },
+  "bella vista|Marsascala": {
+    "lat": 35.9066644,
+    "lon": 14.4783761,
+    "display_name": "Triq Bella Vista, San \u0120wann, Re\u0121jun tat-Tramuntana, SGN 9031, Malta",
+    "query_used": "Bella Vista, Malta"
+  },
+  "coastal path and park|Msida": null,
+  "ta' qali's craft village|Zebbug": null,
+  "the shoreline residence|Kalkara": null,
+  "ghar id-dud|Sliema": {
+    "lat": 35.9124418,
+    "lon": 14.5056438,
+    "display_name": "Triq G\u0127ar id-Dud, Tas-Sliema, Re\u0121jun tal-Lvant, SLM 1605, Malta",
+    "query_used": "Ghar id-Dud, Sliema, Malta"
+  },
+  "17th-century catholic church|Rabat": null,
+  "tigne' point|Sliema": {
+    "lat": 35.9076335,
+    "lon": 14.5106248,
+    "display_name": "The Point, Ix-Xatt ta' Qui-si-Sana, Tas-Sliema, Re\u0121jun tal-Lvant, TPO 0001, Malta",
+    "query_used": "Tigne' Point, Sliema, Malta"
+  },
+  "tigne'|Sliema": {
+    "lat": 35.9066177,
+    "lon": 14.5133136,
+    "display_name": "Fort Tign\u00e9, Pjazza Tign\u00e9, Tas-Sliema, Re\u0121jun tal-Lvant, TPO 0001, Malta",
+    "query_used": "Tigne', Sliema, Malta"
+  },
+  "landrijiet|Bahrija": {
+    "lat": 35.8882615,
+    "lon": 14.3590182,
+    "display_name": "Ta' Landrijiet, Landrijiet, Il-Ba\u0127rija, Ir-Rabat, Re\u0121jun tal-Punent, RBT 6019, Malta",
+    "query_used": "Landrijiet, Bahrija, Malta"
+  },
+  "msida circus|Msida": null,
+  "urban conservation areas|Qormi": null,
+  "tigne' area|Sliema": null,
+  "gzira waterfront|Gzira": null,
+  "madliena ridge|Madliena": null,
+  "3 cities waterfront|Cospicua": null,
+  "g\u0127adira|Mellieha": {
+    "lat": 35.9708754,
+    "lon": 14.3488805,
+    "display_name": "Ir-Riserva Naturali tal-G\u0127adira, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "G\u0127adira, Mellieha, Malta"
+  },
+  "santa margerita area|Cospicua": null,
+  "dingli|Rabat": {
+    "lat": 35.8548318,
+    "lon": 14.3774287,
+    "display_name": "L-Irdum ta\u2019 \u0126ad-Dingli, \u0126ad-Dingli, Re\u0121jun tal-Punent, Malta",
+    "query_used": "Dingli, Rabat, Malta"
+  },
+  "gzira seafront|Gzira": null,
+  "malta's university|Gzira": {
+    "lat": 35.8985191,
+    "lon": 14.5155899,
+    "display_name": "University of Malta (Valletta Campus), Triq San Pawl, Il-Kamrata, Il-Belt Valletta, Re\u0121jun tal-Port, VLT 1174, Malta",
+    "query_used": "Malta's University, Malta"
+  },
+  "wied rini, bahrija|Rabat": {
+    "lat": 35.8871244,
+    "lon": 14.3549854,
+    "display_name": "Wied Rini, Landrijiet, Il-Ba\u0127rija, Ir-Rabat, Re\u0121jun tal-Punent, RBT 6019, Malta",
+    "query_used": "Wied Rini, Bahrija, Rabat, Malta"
+  },
+  "eurosport area|Birkirkara": null,
+  "laguna development|St Julian's": null,
+  "the verdala terraces|Rabat": null,
+  "bingemma victoria lines|Mgarr": null,
+  "virtu|Rabat": {
+    "lat": 35.8745922,
+    "lon": 14.3995945,
+    "display_name": "Virt\u00f9, 26, Triq Carlo Fiamingo, Tal-Virt\u00f9, Ir-Rabat, Re\u0121jun tal-Punent, RBT 2633, Malta",
+    "query_used": "Virtu, Rabat, Malta"
+  },
+  "central village|Qormi": null,
+  "pretty bay promenade|Birzebbuga": null,
+  "palazzo parisio gardens|Naxxar": {
+    "lat": 35.9149321,
+    "lon": 14.4442102,
+    "display_name": "Palazzo Parisio & Gardens, 29, Pjazza Vittorja, San Pawl tat-Tar\u0121a, In-Naxxar, Re\u0121jun tat-Tramuntana, NXR 1700, Malta",
+    "query_used": "Palazzo Parisio Gardens, Naxxar, Malta"
+  },
+  "tal-papa|Birzebbuga": {
+    "lat": 35.8201486,
+    "lon": 14.524584,
+    "display_name": "Tal-Papa, Bir\u017cebbu\u0121a, Re\u0121jun tan-Nofsinhar, Malta",
+    "query_used": "Tal-papa, Birzebbuga, Malta"
+  },
+  "anthony's court|Santa Venera": null,
+  "st.paul's bay|Bugibba": {
+    "lat": 35.9412218,
+    "lon": 14.4198165,
+    "display_name": "Bird Park Malta, Triq tal-Imdawra, Burmarrad, Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, NXR 6057, Malta",
+    "query_used": "St.Paul's Bay, Bugibba, Malta"
+  },
+  "mosta rotunda|Mosta": {
+    "lat": 35.910083,
+    "lon": 14.4258096,
+    "display_name": "Ba\u017cilika ta' Santa Marija, Pjazza Rotunda, Ta' Redusa, Ta' Mlit, Il-Mosta, Re\u0121jun tat-Tramuntana, MST 9058, Malta",
+    "query_used": "Mosta Rotunda, Mosta, Malta"
+  },
+  "mellie\u0127a bay|Mellieha": {
+    "lat": 35.9709599,
+    "lon": 14.3497905,
+    "display_name": "Il-Bajja tal-G\u0127adira, Il-Mellie\u0127a, Re\u0121jun tat-Tramuntana, Malta",
+    "query_used": "Mellie\u0127a Bay, Mellieha, Malta"
+  },
+  "balluta harbor|St Julian's": null,
+  "qbajjar bay|Gozo - Marsalforn": null,
+  "mensija valley|San Gwann": null,
+  "village main square|Gozo - Ghajnsielem": null,
+  "independence square|Gozo - Victoria": {
+    "lat": 35.9008942,
+    "lon": 14.5123411,
+    "display_name": "Misra\u0127 Indipendenza, Il-Belt Valletta, Re\u0121jun tal-Port, Malta",
+    "query_used": "Independence Square, Malta"
+  },
+  "fortizza and fond ghadir|Sliema": null,
+  "rotunda and wied il-ghasel|Mosta": null,
+  "mcast and moskea|Paola": null,
+  "junior collage area|Msida": null,
+  "manoel island and sliema creek|Sliema": null,
+  "piazza|Fgura": null,
+  "ta\" xbiex marina|Gzira": null,
+  "sliema seafront|Gzira": null,
+  "wied qirda|Siggiewi": null,
+  "sliema sea front|Gzira": null,
+  "merchant street|Valletta": null,
+  "main street|Blata l' Bajda": null,
+  "tal-ibragg|Swieqi": null,
+  "luxol|Swieqi": null,
+  "naxxar|Mosta": null,
+  "hastings garden|Valletta": null,
+  "islet promenade|Bugibba": null,
+  "villa rundle gardens|Gozo - Victoria": null,
+  "qormi industrial zone|Qormi": null,
+  "nadur belvedere|Gozo - Nadur": null,
+  "old church area|Birkirkara": null,
+  "ta' xbiex seafront|Msida": null,
+  "g'mangia|Pieta": null,
+  "st pauls bay|Bugibba": null,
+  "madliena hills|Madliena": null,
+  "mosta football ground area|Mosta": null,
+  "pjazza/church|Birkirkara": null,
+  "xemxija promenade|Xemxija": null,
+  "xewkija industrial estate|Gozo - Xewkija": null,
+  "regional road|Gzira": null,
+  "tal-handaq|Qormi": null,
+  "st. christopher street|Valletta": null,
+  "tigne point & bisazza street|Sliema": null,
+  "old parish church|Birkirkara": null,
+  "tign\u00e9 point shopping mall|Sliema": null,
+  "qui si sana|Sliema": null,
+  "new strickland house|Valletta": null,
+  "village church|Balzan": null,
+  "aquarium area|Qawra": null,
+  "republic street|Gozo - Victoria": null,
+  "petrol station|Marsascala": null,
+  "university and mater day hospital|Msida": null,
+  "the shoreline smartcity|Kalkara": null,
+  "qortin|Mellieha": null,
+  "madliena|Bahar Ic-Caghaq": null,
+  "st. julians promenade|St Julian's": null,
+  "ora apartment|St Julian's": null,
+  "bart's medical school|Gozo - Victoria": null,
+  "city centre|Birkirkara": null,
+  "luqa industrial estate|Luqa": null,
+  "qormi health centre|Qormi": null,
+  "historic centre of victoria|Gozo - Victoria": null,
+  "the plaza and the point shopping malls|Sliema": null,
+  "balluta valley|St Julian's": null,
+  "university of malta and the mater dei hospital|Msida": null,
+  "high ridge|Madliena": null,
+  "sliema strand centre|Sliema": null,
+  "wied bingemma|Bingemma": null,
+  "bingemma road|Bingemma": null,
+  "mater dei and university|Msida": null,
+  "ta' pinu church|Gozo - Gharb": null,
+  "st julians bay|Sliema": null,
+  "tigne' seafront|Sliema": null,
+  "university campus|Msida": null,
+  "the point shopping mall|Sliema": null,
+  "kalkara bay|Kalkara": null,
+  "water's edge|St Paul's Bay": null,
+  "handaq industrial area|Qormi": null,
+  "wied iz-zurrieq|Qrendi": null,
+  "\u017conqor|Marsascala": null,
+  "outskirts of marsalforn|Gozo - Marsalforn": null,
+  "hospital|Birkirkara": null,
+  "marsa industrial estate|Marsa": null,
+  "ibragg|Swieqi": null,
+  "mellieha heights|Mellieha": null,
+  "st. elmo|Valletta": null,
+  "ta' giorni|San Gwann": null,
+  "st. george square|Gozo - Victoria": null,
+  "balluta and spinola bay|Sliema": null,
+  "portomaso laguna|St Julian's": null,
+  "airport|Gudja": null,
+  "balluta|Sliema": null,
+  "the point and exiles|Sliema": null,
+  "sea promenade|Qawra": null,
+  "st. julian's bay|Sliema": null,
+  "marina and valletta bastions|Ta' Xbiex": null,
+  "golden bay|Manikata": null,
+  "old balzan town|Balzan": null,
+  "promenade area|St Julian's": null,
+  "qajjenza|Birzebbuga": null,
+  "splash park|Bahar Ic-Caghaq": null,
+  "shoreline complex|Kalkara": null,
+  "cittadella|Gozo - Kercem": null,
+  "sea front|Gozo - Marsalforn": null,
+  "monte rosa gardens|San Gwann": null,
+  "main church in paola|Paola": null,
+  "mosta valley|Mosta": null,
+  "st paul\u2019s islands|Qawra": null,
+  "basilica|Paola": null,
+  "mater dei & university of malta|Swatar": null,
+  "wharf seafront|Marsa": null,
+  "blata il-bajda|Hamrun": null,
+  "villa bologna|Attard": null,
+  "industrial estate|Luqa": null,
+  "ta paris|Birkirkara": null,
+  "tower road promenade|Sliema": null,
+  "limits of rabat|Bahrija": null,
+  "beach and villas area|Marsascala": null,
+  "st. julian's|Paceville": null,
+  "bajda ridge|Mellieha": null,
+  "san gwann|Kappara": null,
+  "st helen church|Birkirkara": null,
+  "st. maria estate|Mellieha": null,
+  "lunziata valley|Gozo - Kercem": null,
+  "ta\u2019 pinu|Gozo - Gharb": null,
+  "st.julian\u2019s|Swieqi": null,
+  "tigne seafront|Sliema": null,
+  "mosta dome church|Mosta": null,
+  "mosta pjazza|Mosta": null,
+  "citadel bastions|Gozo - Victoria": null,
+  "town center|Gozo - Xaghra": null,
+  "xlendi seafront|Gozo - Xlendi": null,
+  "university and mater dei hospital|Gzira": null,
+  "st.george's bay|St Julian's": null,
+  "national swimming pool|Gzira": null,
+  "portobello area|St Paul's Bay": null,
+  "bay|Birzebbuga": null,
+  "marsaxlokk marina|Marsaxlokk": null,
+  "block h|Gozo - Victoria": null,
+  "msida church|Pieta": null,
+  "marsascala bay|Marsascala": null,
+  "main church|Mosta": null,
+  "valletta bastions|Guardamangia": null,
+  "southridge|Mellieha": null,
+  "valley|Mosta": null,
+  "pjazza|Floriana": null,
+  "kempinski san lawrenz resort hotel|Gozo - San Lawrenz": null,
+  "fontana|Gozo - Victoria": null,
+  "naxxar parish church|Naxxar": null,
+  "san gwann high street|San Gwann": null,
+  "lippija|Mgarr": null,
+  "grand harbor|Floriana": null,
+  "savoy gardens|Gzira": null,
+  "historic heart of birgu|Vittoriosa": null,
+  "sliema front|Gzira": null,
+  "zonqor heights|Marsascala": null,
+  "st. paul's islands|Bugibba": null,
+  "marsamxett port|Valletta": null,
+  "santa marija estate|Mellieha": null,
+  "valletta harbour|Sliema": null,
+  "plaza shopping complex|Sliema": null,
+  "three villas|Balzan": null,
+  "cliff edge|Gozo - Ghajnsielem": null,
+  "port|Marsa": null,
+  "gzira promenade|Gzira": null
+}

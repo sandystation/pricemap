@@ -188,7 +188,8 @@ Return a JSON object with these fields:
 - "has_storage" (bool or null): true if storage room/boxroom mentioned
 - "ceiling_height" (string): "double", "high", "normal", or "unknown"
 - "noise_exposure" (string): "quiet", "moderate", "busy", or "unknown"
-- "lease_type" (string): "freehold", "leasehold", or "unknown" """
+- "lease_type" (string): "freehold", "leasehold", or "unknown"
+- "location_reference" (string or null): the most specific location mentioned in the description - a street name (e.g. "Triq il-Kbira"), bay/landmark (e.g. "Balluta Bay"), named building/complex (e.g. "Fort Cambridge"), or specific area (e.g. "Spinola"). Return the single most precise reference, or null if only the town name is mentioned."""
 
 IMAGE_FIELDS_SCHEMA = """
 - "interior_score" (int 1-5): overall interior quality visible in photos
@@ -373,6 +374,7 @@ TEXT_FIELDS = {
     "ceiling_height": str,
     "noise_exposure": str,
     "lease_type": str,
+    "location_reference": (str, type(None)),
 }
 
 IMAGE_FIELDS = {

@@ -259,3 +259,33 @@ After adding dist_beach_km, dist_marina_km, dist_airport_km, dist_sliema_km, dis
 | Within 10% | 35.1% | **+9.3pp** |
 | Within 20% | 63.7% | **+14.6pp** |
 | Within 25% | 74.5% | **+15.7pp** |
+
+---
+
+## Geocoded location references - 2026-04-09
+
+LLM run: `v3_with_locref` (added `location_reference` field to extraction prompt)
+Geocoding: 185/1339 unique references geocoded via Nominatim, covering ~3,500 docs
+Refined coordinates: 183 sale docs (8%), 471 rent docs (5%)
+
+### Sales (apartment, mt_remax) -- CURRENT BEST
+
+| Metric | Value | vs Baseline |
+|--------|-------|-------------|
+| MAPE | **16.2%** | **-11.0pp** |
+| R2 | 0.6450 | **+0.123** |
+| MAE | 112,244 EUR | **-26.4%** |
+| Within 5% | 21.5% | +6.1pp |
+| Within 10% | 41.6% | **+12.9pp** |
+| Within 20% | 71.3% | **+21.2pp** |
+| Within 25% | 80.1% | **+20.7pp** |
+
+### Rents (apartment, mt_remax)
+
+| Metric | Value | vs Baseline | Note |
+|--------|-------|-------------|------|
+| MAPE | 18.8% | -7.6pp | Slight regression vs v2 (18.2%) -- geocoded coords may add noise for rents |
+| R2 | 0.6067 | +0.190 | |
+| Within 20% | 62.2% | +13.1pp | |
+
+Note: For rents, the v2_expanded_images run without geocoding (MAPE 18.2%) remains the best model.
