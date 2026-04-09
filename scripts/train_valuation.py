@@ -189,7 +189,7 @@ def compute_distances(lat: float, lon: float) -> dict:
 
     return {"dist_coast_km": round(coast_km, 3), "dist_cbd_km": round(cbd_km, 3)}
 
-AMENITY_FEATURES = list(AMENITY_KEYWORDS.keys()) + ["is_premium_zone"]
+AMENITY_FEATURES = list(AMENITY_KEYWORDS.keys()) + ["is_premium_zone", "is_gozo"]
 
 CATEGORICAL_FEATURES = ["locality_enc", "province_enc"]
 
@@ -416,12 +416,17 @@ def build_dataframe(
         zone = raw.get("Zone") if isinstance(raw, dict) else None
         is_premium = 1.0 if zone else 0.0
 
+        # Gozo: separate island with ~50% lower prices than Malta
+        locality = cur.get("locality", "")
+        is_gozo = 1.0 if locality.startswith("Gozo") or cur.get("province") == "Gozo" else 0.0
+
         rows.append({
             "price_eur": cur["price_eur"],
             "lat": cur["lat"],
             "lon": cur["lon"],
             "area_sqm": cur.get("_clean_area", np.nan),
             "is_premium_zone": is_premium,
+            "is_gozo": is_gozo,
             **dists,
             **osm,
             "bedrooms": cur.get("bedrooms") or np.nan,
@@ -468,14 +473,40 @@ def get_feature_names() -> list[str]:
 # Spatial Cross-Validation
 # ===================================================================
 
+GOZO_LAT_THRESHOLD = 35.97  # Gozo is above this latitude
+
+
 def spatial_cv_splits(lats: np.ndarray, n_folds: int = N_FOLDS):
-    """Create geographic folds by latitude strips."""
-    lat_order = np.argsort(lats)
-    fold_indices = np.array_split(lat_order, n_folds)
+    """Create geographic folds with stratified Malta/Gozo split.
+
+    Within each island, properties are sorted by latitude and split into
+    strips. Gozo properties are distributed proportionally across all folds
+    so every fold sees both islands.
+    """
+    all_idx = np.arange(len(lats))
+    gozo_mask = lats >= GOZO_LAT_THRESHOLD
+    malta_idx = all_idx[~gozo_mask]
+    gozo_idx = all_idx[gozo_mask]
+
+    # Sort each island by latitude, split into n_folds strips
+    malta_sorted = malta_idx[np.argsort(lats[malta_idx])]
+    malta_folds = np.array_split(malta_sorted, n_folds)
+
+    if len(gozo_idx) > 0:
+        gozo_sorted = gozo_idx[np.argsort(lats[gozo_idx])]
+        gozo_folds = np.array_split(gozo_sorted, n_folds)
+    else:
+        gozo_folds = [np.array([], dtype=int)] * n_folds
+
+    # Combine: each fold gets its Malta strip + its Gozo strip
     splits = []
     for i in range(n_folds):
-        test_idx = fold_indices[i]
-        train_idx = np.concatenate([fold_indices[j] for j in range(n_folds) if j != i])
+        test_idx = np.concatenate([malta_folds[i], gozo_folds[i]])
+        train_parts = []
+        for j in range(n_folds):
+            if j != i:
+                train_parts.extend([malta_folds[j], gozo_folds[j]])
+        train_idx = np.concatenate(train_parts)
         splits.append((train_idx, test_idx))
     return splits
 

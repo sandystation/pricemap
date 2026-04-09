@@ -182,3 +182,36 @@ Also includes: dist_coast_km, dist_cbd_km, 10 OSM distance/density features, is_
 | Within 5% | 17.0% | +3.9pp | +1.1pp |
 | Within 10% | 33.5% | **+7.7pp** | +1.4pp |
 | Within 20% | 59.9% | **+10.8pp** | +2.7pp |
+
+---
+
+## V2 expanded features (26 LLM fields) + images + dist + OSM - 2026-04-09
+
+LLM run: `v2_expanded_images`
+LLM provider/model: Google / gemini-3.1-flash-lite-preview
+Mode: with-images (up to 20 photos), 20 parallel workers, 32,051 docs, 0 errors, ~96 min
+New text features: parking_type, outdoor_space, outdoor_sqm, floor_category, building_units, kitchen_type, orientation, is_investment, is_new_build, has_storage, ceiling_height, noise_exposure, lease_type
+New image features: kitchen_score, bathroom_score, flooring_type, exterior_condition, street_quality
+Total features in model: 61
+
+### Sales (apartment, mt_remax)
+
+| Metric | Value | vs Baseline | vs v1 images |
+|--------|-------|-------------|-------------|
+| MAPE | 23.1% | **-4.1pp** | -0.2pp |
+| R2 | 0.6024 | **+0.080** | -0.012 |
+| MAE | 131,610 EUR | **-13.7%** | +2.0% |
+| Within 5% | 18.0% | **+2.6pp** | +0.9pp |
+| Within 10% | 31.6% | +2.9pp | -1.9pp |
+| Within 20% | 54.4% | +4.3pp | -2.2pp |
+
+### Rents (apartment, mt_remax)
+
+| Metric | Value | vs Baseline | vs v1 images |
+|--------|-------|-------------|-------------|
+| MAPE | 20.3% | **-6.1pp** | **-0.6pp** |
+| R2 | 0.6485 | **+0.232** | **+0.018** |
+| MAE | 328 EUR | **-23.9%** | **-2.7%** |
+| Within 5% | 17.7% | +4.6pp | +0.7pp |
+| Within 10% | 34.4% | **+8.6pp** | +0.9pp |
+| Within 20% | 61.4% | **+12.3pp** | **+1.5pp** |

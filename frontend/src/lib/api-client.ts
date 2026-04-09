@@ -1,3 +1,5 @@
+import type { FeatureCollection } from "geojson";
+
 import type {
   GeocodeResult,
   CountryStats,
@@ -50,7 +52,7 @@ export const api = {
     },
     getHeatmap(
       countryCode: string
-    ): Promise<GeoJSON.FeatureCollection> {
+    ): Promise<FeatureCollection> {
       return fetchApi(`/api/v1/stats/${countryCode}/heatmap`);
     },
   },

@@ -189,7 +189,9 @@ Two model pipelines exist:
 Both backend and frontend are linted on every push. Ensure changes pass before committing:
 
 - **Backend (`ruff`)**: Line length limit is **100** chars (configured in `backend/pyproject.toml`). Rules: `E`, `F`, `I`, `N`, `W` — this includes unused imports (`F401`) and line-too-long (`E501`). Run `cd backend && ruff check src/` to verify.
+- **Backend (`mypy`)**: Run `cd backend && mypy src/ --ignore-missing-imports`. Watch for `AsyncGenerator` return types on async generators (not `AsyncSession`), nullable attributes from `db.get()`, and `str | None` passed where `str` is expected.
 - **Frontend (`eslint`)**: Config lives in `frontend/eslint.config.mjs` (flat config, ESLint 9). Without this file, `next lint` prompts interactively and fails in CI. Run `cd frontend && npm run lint` to verify.
+- **Frontend (`build`)**: `npm run build` in `frontend/` runs type checking. Ensure all type imports are explicit (e.g., `import type { FeatureCollection } from "geojson"` — the `GeoJSON` namespace is not global).
 
 ## Important Gotchas
 

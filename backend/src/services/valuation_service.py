@@ -19,6 +19,8 @@ class ValuationService:
         # Step 1: Geocode if needed
         lat, lon = request.lat, request.lon
         if not lat or not lon:
+            if not request.address:
+                raise ValueError("Either lat/lon or address must be provided")
             geo = await self.geocoder.geocode(
                 address=request.address, country_code=request.country_code
             )

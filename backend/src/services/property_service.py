@@ -61,6 +61,8 @@ class PropertyService:
             raise HTTPException(status_code=404, detail="Property not found")
 
         country = await self.db.get(Country, prop.country_id)
+        if not country:
+            raise HTTPException(status_code=404, detail="Country not found")
         return self._to_response(prop, country.code)
 
     def _to_response(self, prop: Property, country_code: str) -> PropertyResponse:
