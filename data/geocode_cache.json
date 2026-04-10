@@ -1423,5 +1423,65 @@
   "three villas|Balzan": null,
   "cliff edge|Gozo - Ghajnsielem": null,
   "port|Marsa": null,
-  "gzira promenade|Gzira": null
+  "gzira promenade|Gzira": null,
+  "ibragg|": {
+    "lat": 35.9217557,
+    "lon": 14.4748789,
+    "display_name": "Is-Swieqi - Ibra\u0121\u0121, Triq tal-Ibra\u0121, Is-Swieqi, Re\u0121jun tal-Lvant, SWQ 2333, Malta",
+    "query_used": "Ibragg, Malta"
+  },
+  "qawra|": {
+    "lat": 35.9541286,
+    "lon": 14.4198078,
+    "display_name": "Il-Qawra, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 2404, Malta",
+    "query_used": "Qawra, Malta"
+  },
+  "marsalforn (gozo)|": {
+    "lat": 36.0708915,
+    "lon": 14.2598063,
+    "display_name": "Marsalforn, I\u017c-\u017bebbu\u0121, Re\u0121jun G\u0127awdex, MFN 1211, Malta",
+    "query_used": "Marsalforn (Gozo), Malta"
+  },
+  "bugibba|": {
+    "lat": 35.9483211,
+    "lon": 14.4105059,
+    "display_name": "Bu\u0121ibba, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 3015, Malta",
+    "query_used": "Bugibba, Malta"
+  },
+  "xlendi (gozo)|": {
+    "lat": 36.0311977,
+    "lon": 14.2182656,
+    "display_name": "Ix-Xlendi, Il-Munxar, Re\u0121jun G\u0127awdex, XLN 1101, Malta",
+    "query_used": "Xlendi (Gozo), Malta"
+  },
+  "bormla|": {
+    "lat": 35.8825817,
+    "lon": 14.522721,
+    "display_name": "Bormla, Re\u0121jun tal-Port, BML 2064, Malta",
+    "query_used": "Bormla, Malta"
+  },
+  "birgu|": {
+    "lat": 35.8881119,
+    "lon": 14.5238445,
+    "display_name": "Il-Birgu, Re\u0121jun tal-Port, Malta",
+    "query_used": "Birgu, Malta"
+  },
+  "isla|": {
+    "lat": 35.887175,
+    "lon": 14.517307,
+    "display_name": "L-Isla, Re\u0121jun tal-Port, Malta",
+    "query_used": "Isla, Malta"
+  },
+  "xemxija|": {
+    "lat": 35.9490125,
+    "lon": 14.3838712,
+    "display_name": "Ix-Xemxija, San Pawl il-Ba\u0127ar, Re\u0121jun tat-Tramuntana, SPB 9028, Malta",
+    "query_used": "Xemxija, Malta"
+  },
+  "santa lucija|": {
+    "lat": 35.8627784,
+    "lon": 14.5047695,
+    "display_name": "Santa Lu\u010bija, Re\u0121jun tan-Nofsinhar, Malta",
+    "query_used": "Santa Lucija, Malta"
+  }
 }

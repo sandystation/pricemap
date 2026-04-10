@@ -289,3 +289,77 @@ Refined coordinates: 183 sale docs (8%), 471 rent docs (5%)
 | Within 20% | 62.2% | +13.1pp | |
 
 Note: For rents, the v2_expanded_images run without geocoding (MAPE 18.2%) remains the best model.
+
+---
+
+## Combined RE/MAX + MaltaPark training - 2026-04-09
+
+Collections: mt_remax + mt_maltapark (2,619 samples vs 2,292 RE/MAX-only)
+LLM runs: v3_with_locref (RE/MAX) + maltapark_v1_images (MaltaPark)
+MaltaPark: geocoded via RE/MAX town centroids + Nominatim (97.5% coverage)
+
+### Sales (apartment, combined)
+
+| Metric | Value | vs RE/MAX-only best |
+|--------|-------|---------------------|
+| MAPE | 17.1% | +0.9pp |
+| R2 | 0.6003 | -0.045 |
+| MAE | 110,509 EUR | -1.5% |
+| Within 20% | 67.6% | -3.7pp |
+
+Note: Combined model slightly worse on MAPE/R2 due to MaltaPark's town-level-only coordinates and 22.8% area coverage. RE/MAX-only model (MAPE 16.2%) remains the best for sales. MaltaPark would benefit from property-level geocoding via location_reference + Nominatim.
+
+---
+
+## Bulgaria (bg_imot) apartment sales - 2026-04-10
+
+Collection: bg_imot (9,805 docs, 6,569 trainable apartments after filtering)
+Geocoding: 84.4% coverage via Nominatim (neighborhood + city → coordinates)
+LLM run: bg_imot_v1_images (gemini-3.1-flash-lite-preview, with images, 9,751 enriched)
+
+### Baseline (no LLM features)
+
+| Metric | Value |
+|--------|-------|
+| Samples | 6,569 |
+| MAPE | 27.1% |
+| R2 | 0.5152 |
+| MAE | 34,408 EUR |
+| Within 10% | 25.4% |
+| Within 20% | 48.7% |
+
+### With LLM features
+
+| Metric | Value | vs Baseline |
+|--------|-------|-------------|
+| MAPE | **23.7%** | **-3.4pp** |
+| R2 | 0.5573 | +0.042 |
+| MAE | 31,153 EUR | **-9.5%** |
+| Within 10% | 31.7% | **+6.3pp** |
+| Within 20% | 56.3% | **+7.6pp** |
+
+### With stratified CV by locality -- CURRENT BEST
+
+| Metric | Value | vs Baseline |
+|--------|-------|-------------|
+| MAPE | **12.9%** | **-14.2pp** |
+| R2 | 0.8012 | **+0.286** |
+| MAE | 18,747 EUR | **-45.5%** |
+| Within 5% | 27.9% | +16.4pp |
+| Within 10% | 50.6% | **+25.2pp** |
+| Within 20% | 79.4% | **+30.7pp** |
+| Within 25% | 87.5% | **+29.5pp** |
+
+---
+
+## Malta sales -- stratified CV by locality -- CURRENT BEST (2026-04-10)
+
+| Metric | Value | vs Baseline |
+|--------|-------|-------------|
+| MAPE | **12.1%** | **-15.1pp** |
+| R2 | 0.7791 | **+0.257** |
+| MAE | 85,142 EUR | **-44.2%** |
+| Within 5% | 36.4% | +21.0pp |
+| Within 10% | 59.7% | **+31.0pp** |
+| Within 20% | 81.8% | **+31.7pp** |
+| Within 25% | 87.2% | **+27.8pp** |

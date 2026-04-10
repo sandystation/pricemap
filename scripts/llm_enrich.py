@@ -492,13 +492,14 @@ def _process_one(
     # Download images if needed (each thread gets its own httpx client)
     images = []
     if with_images:
-        image_urls = cur.get("all_image_urls", [])
+        image_urls = cur.get("all_image_urls") or cur.get("image_urls") or []
+        source = cur.get("source") or doc_id.split(":")[0] if ":" in doc_id else "unknown"
         if image_urls:
             ext_id = doc_id.split(":", 1)[1] if ":" in doc_id else doc_id
             img_client = get_client()
             try:
                 local_paths = download_images(
-                    img_client, image_urls, "mt_remax", ext_id,
+                    img_client, image_urls, source, ext_id,
                     max_images=20,
                 )
             finally:

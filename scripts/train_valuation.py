@@ -259,8 +259,9 @@ LLM_IMAGE_CATEGORICAL = {
 def load_training_data(
     listing_type: str,
     property_type: str = "apartment",
+    collections: list[str] | None = None,
 ) -> list[dict]:
-    """Load and filter properties from DocStore."""
+    """Load and filter properties from one or more DocStore collections."""
     config = MODEL_CONFIGS.get((property_type, listing_type))
     if config is None:
         raise ValueError(
@@ -268,9 +269,14 @@ def load_training_data(
             f"Available: {list(MODEL_CONFIGS.keys())}"
         )
 
+    if collections is None:
+        collections = ["mt_remax"]
+
     store = DocStore()
-    coll = store.collection("mt_remax")
-    all_docs = coll.find()
+    all_docs = []
+    for coll_name in collections:
+        coll = store.collection(coll_name)
+        all_docs.extend(coll.find())
     store.close()
 
     result = []
@@ -351,15 +357,36 @@ def load_training_data(
 # Feature Engineering
 # ===================================================================
 
-def extract_amenities(features_list: list | None) -> dict:
-    """Parse RE/MAX features list into boolean amenity columns."""
-    if not features_list:
-        return {k: np.nan for k in AMENITY_KEYWORDS}
-    feat_set = set(features_list)
-    return {
-        key: 1.0 if any(kw in feat_set for kw in keywords) else 0.0
-        for key, keywords in AMENITY_KEYWORDS.items()
-    }
+def extract_amenities(cur: dict) -> dict:
+    """Extract boolean amenity features from a doc.
+
+    Works for both RE/MAX (has `features` list) and MaltaPark (has `has_*` fields).
+    """
+    features_list = cur.get("features")
+
+    if features_list:
+        # RE/MAX: parse from features list
+        feat_set = set(features_list)
+        result = {
+            key: 1.0 if any(kw in feat_set for kw in keywords) else 0.0
+            for key, keywords in AMENITY_KEYWORDS.items()
+        }
+    elif cur.get("source") == "mt_maltapark" or any(cur.get(f"has_{k}") is not None for k in ("parking", "pool", "garden")):
+        # MaltaPark: map structured boolean fields
+        result = {
+            "has_balcony": float(cur.get("has_balcony", 0) or 0),
+            "has_ac": np.nan,  # not available in MaltaPark
+            "has_ensuite": np.nan,
+            "has_lift": float(cur.get("has_elevator", 0) or 0),
+            "has_double_glazed": np.nan,
+            "has_terrace": np.nan,
+            "has_pool": float(cur.get("has_pool", 0) or 0),
+            "has_ceramic_floor": np.nan,
+        }
+    else:
+        result = {k: np.nan for k in AMENITY_KEYWORDS}
+
+    return result
 
 
 def extract_llm_features(cur: dict) -> dict:
@@ -411,7 +438,7 @@ def build_dataframe(
     rows = []
     n_refined = 0
     for cur in docs:
-        amenities = extract_amenities(cur.get("features"))
+        amenities = extract_amenities(cur)
         total_int = cur.get("total_int_area")
         total_ext = cur.get("total_ext_area")
 
@@ -502,39 +529,52 @@ def get_feature_names() -> list[str]:
 # Spatial Cross-Validation
 # ===================================================================
 
-GOZO_LAT_THRESHOLD = 35.97  # Gozo is above this latitude
+def spatial_cv_splits(lats: np.ndarray, n_folds: int = N_FOLDS, localities: np.ndarray | None = None):
+    """Create geographic folds stratified by locality clusters.
 
+    Groups properties by locality (city/town), then distributes each group
+    across folds proportionally. Within each group, properties are sorted
+    by latitude for spatial separation. This ensures every fold sees every
+    city/region, preventing the model from being tested on unseen cities.
 
-def spatial_cv_splits(lats: np.ndarray, n_folds: int = N_FOLDS):
-    """Create geographic folds with stratified Malta/Gozo split.
-
-    Within each island, properties are sorted by latitude and split into
-    strips. Gozo properties are distributed proportionally across all folds
-    so every fold sees both islands.
+    Falls back to simple latitude strips if localities are not provided.
     """
     all_idx = np.arange(len(lats))
-    gozo_mask = lats >= GOZO_LAT_THRESHOLD
-    malta_idx = all_idx[~gozo_mask]
-    gozo_idx = all_idx[gozo_mask]
 
-    # Sort each island by latitude, split into n_folds strips
-    malta_sorted = malta_idx[np.argsort(lats[malta_idx])]
-    malta_folds = np.array_split(malta_sorted, n_folds)
+    if localities is None:
+        # Simple latitude strip fallback
+        lat_order = np.argsort(lats)
+        fold_indices = np.array_split(lat_order, n_folds)
+        splits = []
+        for i in range(n_folds):
+            test_idx = fold_indices[i]
+            train_idx = np.concatenate([fold_indices[j] for j in range(n_folds) if j != i])
+            splits.append((train_idx, test_idx))
+        return splits
 
-    if len(gozo_idx) > 0:
-        gozo_sorted = gozo_idx[np.argsort(lats[gozo_idx])]
-        gozo_folds = np.array_split(gozo_sorted, n_folds)
-    else:
-        gozo_folds = [np.array([], dtype=int)] * n_folds
+    # Group indices by locality
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for idx in all_idx:
+        groups[localities[idx]].append(idx)
 
-    # Combine: each fold gets its Malta strip + its Gozo strip
+    # For each group, sort by latitude and split into n_folds
+    fold_buckets = [[] for _ in range(n_folds)]
+    for loc, indices in groups.items():
+        arr = np.array(indices)
+        sorted_arr = arr[np.argsort(lats[arr])]
+        group_folds = np.array_split(sorted_arr, n_folds)
+        for i in range(n_folds):
+            fold_buckets[i].append(group_folds[i])
+
+    # Build train/test splits
     splits = []
     for i in range(n_folds):
-        test_idx = np.concatenate([malta_folds[i], gozo_folds[i]])
+        test_idx = np.concatenate(fold_buckets[i])
         train_parts = []
         for j in range(n_folds):
             if j != i:
-                train_parts.extend([malta_folds[j], gozo_folds[j]])
+                train_parts.append(np.concatenate(fold_buckets[j]))
         train_idx = np.concatenate(train_parts)
         splits.append((train_idx, test_idx))
     return splits
@@ -620,7 +660,8 @@ def train_and_evaluate(
         + list(LLM_IMAGE_CATEGORICAL.keys())
     )
 
-    splits = spatial_cv_splits(lats, n_folds)
+    localities_arr = df["locality"].values
+    splits = spatial_cv_splits(lats, n_folds, localities=localities_arr)
 
     all_y_true = []
     all_y_pred = []
@@ -844,8 +885,12 @@ def main():
         help="Property type (default: apartment)",
     )
     parser.add_argument(
+        "--collections", default="mt_remax",
+        help="Comma-separated collection names (default: mt_remax)",
+    )
+    parser.add_argument(
         "--llm-run", default=None,
-        help="Load LLM features from a specific enrichment run ID (see llm_enrich.py --stats)",
+        help="LLM enrichment run ID(s). Comma-separated for multiple collections (see llm_enrich.py --stats)",
     )
     parser.add_argument(
         "--dry-run", action="store_true",
@@ -859,30 +904,43 @@ def main():
         sys.exit(1)
     config = MODEL_CONFIGS[config_key]
 
-    # Load LLM run data if specified
+    # Load LLM run data if specified (supports multiple comma-separated runs)
     llm_run_data = None
     llm_run_meta = None
     coord_overrides = None
     if args.llm_run:
         from llm_enrich import load_run, ENRICHMENTS_DIR
-        llm_run_data = load_run(args.llm_run)
-        meta_path = os.path.join(ENRICHMENTS_DIR, args.llm_run, "metadata.json")
-        if os.path.exists(meta_path):
-            with open(meta_path) as f:
-                llm_run_meta = json.load(f)
-        logger.info(f"Loaded LLM run '{args.llm_run}': {len(llm_run_data)} enrichments")
+        run_ids = [r.strip() for r in args.llm_run.split(",")]
+        llm_run_data = {}
+        llm_run_meta = []
+        for run_id in run_ids:
+            run_data = load_run(run_id)
+            llm_run_data.update(run_data)
+            meta_path = os.path.join(ENRICHMENTS_DIR, run_id, "metadata.json")
+            if os.path.exists(meta_path):
+                with open(meta_path) as f:
+                    llm_run_meta.append(json.load(f))
+            logger.info(f"Loaded LLM run '{run_id}': {len(run_data)} enrichments")
+        logger.info(f"Total LLM enrichments: {len(llm_run_data)}")
 
-        # Load geocoded coordinate overrides if available
+        # Load geocoded coordinate overrides from all runs
         try:
             from geocode_locations import build_coordinate_overrides
-            coord_overrides = build_coordinate_overrides(args.llm_run)
+            coord_overrides = {}
+            for run_id in run_ids:
+                try:
+                    overrides = build_coordinate_overrides(run_id)
+                    coord_overrides.update(overrides)
+                except FileNotFoundError:
+                    pass
             if coord_overrides:
                 logger.info(f"Loaded {len(coord_overrides)} geocoded coordinate overrides")
         except Exception:
-            pass  # geocoding not yet run, that's fine
+            pass
 
     # Load data
-    docs = load_training_data(args.listing_type, args.property_type)
+    collection_list = [c.strip() for c in args.collections.split(",")]
+    docs = load_training_data(args.listing_type, args.property_type, collections=collection_list)
     if len(docs) < 50:
         logger.error(f"Only {len(docs)} samples -- need at least 50 to train.")
         sys.exit(1)
@@ -906,7 +964,7 @@ def main():
     # Add LLM run info to results for metadata tracking
     if llm_run_meta:
         results["llm_run_id"] = args.llm_run
-        results["llm_run_meta"] = llm_run_meta
+        results["llm_run_meta"] = llm_run_meta if len(llm_run_meta) > 1 else llm_run_meta[0]
 
     # Save
     save_artifacts(results, args.property_type, args.listing_type, config)
