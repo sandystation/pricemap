@@ -25,10 +25,28 @@ logger = logging.getLogger(__name__)
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "osm_cache")
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
-# Malta bounding box (covers Malta, Gozo, Comino)
-MALTA_BBOX = "35.78,14.18,36.09,14.58"
+# Country configs: bounding box, key locations, POI categories
+COUNTRY_CONFIGS = {
+    "MT": {
+        "bbox": "35.78,14.18,36.09,14.58",
+        "key_locations": {
+            "sliema": (35.9116, 14.5027),
+            "stjulians": (35.9186, 14.4903),
+        },
+    },
+    "BG": {
+        "bbox": "41.23,22.35,44.22,28.61",
+        "key_locations": {
+            "sofia": (42.6977, 23.3219),
+            "plovdiv": (42.1354, 24.7453),
+            "varna": (43.2141, 27.9147),
+            "burgas": (42.5048, 27.4626),
+            "sea": (42.4, 27.7),  # Black Sea coast midpoint
+        },
+    },
+}
 
-# POI categories to query: (tag_key, tag_value, cache_name)
+# POI categories to query per country: (tag_key, tag_value, cache_name)
 POI_CATEGORIES = [
     ("amenity", "school", "schools"),
     ("public_transport", "platform", "bus_stops"),
@@ -43,13 +61,13 @@ POI_CATEGORIES = [
     ("natural", "beach", "beaches"),
     ("leisure", "marina", "marinas"),
     ("aeroway", "aerodrome", "airports"),
+    ("amenity", "kindergarten", "kindergartens"),
+    ("amenity", "university", "universities"),
 ]
 
-# Key locations for distance features (lat, lon)
-KEY_LOCATIONS = {
-    "sliema": (35.9116, 14.5027),       # Sliema seafront
-    "stjulians": (35.9186, 14.4903),    # St Julian's / Paceville
-}
+# Legacy compat
+MALTA_BBOX = COUNTRY_CONFIGS["MT"]["bbox"]
+KEY_LOCATIONS = COUNTRY_CONFIGS["MT"]["key_locations"]
 
 
 # Approximate conversion at Malta latitude (35.9°N)
@@ -59,13 +77,14 @@ DEG_TO_KM_LON = 89.8
 RADIUS_500M_DEG = 0.005  # ~500m in degrees (approximate)
 
 
-def _overpass_query(tag_key: str, tag_value: str) -> list[tuple[float, float]]:
-    """Query Overpass API for nodes/ways with given tag in Malta."""
+def _overpass_query(tag_key: str, tag_value: str, bbox: str = None) -> list[tuple[float, float]]:
+    """Query Overpass API for nodes/ways with given tag in a bounding box."""
+    bbox = bbox or MALTA_BBOX
     query = f"""
     [out:json][timeout:120];
     (
-      node["{tag_key}"="{tag_value}"]({MALTA_BBOX});
-      way["{tag_key}"="{tag_value}"]({MALTA_BBOX});
+      node["{tag_key}"="{tag_value}"]({bbox});
+      way["{tag_key}"="{tag_value}"]({bbox});
     );
     out center;
     """
@@ -94,17 +113,19 @@ def _overpass_query(tag_key: str, tag_value: str) -> list[tuple[float, float]]:
     return coords
 
 
-def _load_or_download(name: str, tag_key: str, tag_value: str) -> list[tuple[float, float]]:
+def _load_or_download(name: str, tag_key: str, tag_value: str, country: str = "MT") -> list[tuple[float, float]]:
     """Load POI coords from cache or download from Overpass."""
     os.makedirs(CACHE_DIR, exist_ok=True)
-    cache_path = os.path.join(CACHE_DIR, f"{name}.json")
+    cache_name = f"{country.lower()}_{name}" if country != "MT" else name
+    cache_path = os.path.join(CACHE_DIR, f"{cache_name}.json")
 
     if os.path.exists(cache_path):
         with open(cache_path) as f:
             return [tuple(c) for c in json.load(f)]
 
-    logger.info(f"Downloading OSM {name} ({tag_key}={tag_value}) for Malta...")
-    coords = _overpass_query(tag_key, tag_value)
+    bbox = COUNTRY_CONFIGS.get(country, {}).get("bbox", MALTA_BBOX)
+    logger.info(f"Downloading OSM {name} ({tag_key}={tag_value}) for {country}...")
+    coords = _overpass_query(tag_key, tag_value, bbox)
     with open(cache_path, "w") as f:
         json.dump(coords, f)
     logger.info(f"  {name}: {len(coords)} POIs cached")
@@ -114,11 +135,13 @@ def _load_or_download(name: str, tag_key: str, tag_value: str) -> list[tuple[flo
 class OSMFeatureComputer:
     """Preloads POI data and builds KD-trees for fast distance queries."""
 
-    def __init__(self):
+    def __init__(self, country: str = "MT"):
+        self._country = country
         self._trees: dict[str, KDTree] = {}
         self._coords: dict[str, np.ndarray] = {}
         self._all_pois: np.ndarray | None = None
         self._all_restaurants_cafes: np.ndarray | None = None
+        self._key_locations = COUNTRY_CONFIGS.get(country, {}).get("key_locations", {})
         self._loaded = False
 
     def load(self):
@@ -130,7 +153,7 @@ class OSMFeatureComputer:
         restaurant_cafe_coords = []
 
         for tag_key, tag_value, name in POI_CATEGORIES:
-            coords = _load_or_download(name, tag_key, tag_value)
+            coords = _load_or_download(name, tag_key, tag_value, country=self._country)
             if coords:
                 arr = np.array(coords)
                 self._coords[name] = arr
@@ -146,7 +169,7 @@ class OSMFeatureComputer:
 
         self._loaded = True
         total = sum(len(c) for c in self._coords.values())
-        logger.info(f"OSM features loaded: {total} POIs across {len(self._coords)} categories")
+        logger.info(f"OSM features loaded ({self._country}): {total} POIs across {len(self._coords)} categories")
 
     def compute(self, lat: float, lon: float) -> dict:
         """Compute all OSM distance features for a point."""
@@ -167,6 +190,8 @@ class OSMFeatureComputer:
             "dist_beach_km": ["beaches"],
             "dist_marina_km": ["marinas"],
             "dist_airport_km": ["airports"],
+            "dist_kindergarten_km": ["kindergartens"],
+            "dist_university_km": ["universities"],
         }
 
         for feat_name, categories in distance_features.items():
@@ -187,8 +212,11 @@ class OSMFeatureComputer:
             count = self._trees_count_within(self._all_restaurants_cafes, lat, lon, RADIUS_500M_DEG)
             result["dining_count_500m"] = count
 
-        # Distance to key locations (haversine)
-        for name, (klat, klon) in KEY_LOCATIONS.items():
+        # Distance to key locations (haversine) -- country-specific
+        # Fill all possible key location features (NaN for other countries)
+        for feat in OSM_KEY_LOCATION_FEATURES:
+            result[feat] = np.nan
+        for name, (klat, klon) in self._key_locations.items():
             result[f"dist_{name}_km"] = round(self._haversine(lat, lon, klat, klon), 3)
 
         return result
@@ -219,16 +247,26 @@ class OSMFeatureComputer:
         return int(np.sum(dist_sq <= radius_deg ** 2))
 
 
-# Module-level singleton
-_computer = None
+# Module-level singletons per country
+_computers: dict[str, OSMFeatureComputer] = {}
 
 
-def compute_osm_features(lat: float, lon: float) -> dict:
+def _detect_country(lat: float, lon: float) -> str:
+    """Detect country from coordinates."""
+    if 35.7 < lat < 36.1 and 14.1 < lon < 14.6:
+        return "MT"
+    if 41.0 < lat < 44.5 and 22.0 < lon < 29.0:
+        return "BG"
+    return "MT"  # default
+
+
+def compute_osm_features(lat: float, lon: float, country: str | None = None) -> dict:
     """Compute OSM distance and density features for a property location."""
-    global _computer
-    if _computer is None:
-        _computer = OSMFeatureComputer()
-    return _computer.compute(lat, lon)
+    if country is None:
+        country = _detect_country(lat, lon)
+    if country not in _computers:
+        _computers[country] = OSMFeatureComputer(country=country)
+    return _computers[country].compute(lat, lon)
 
 
 # Feature names exported for train_valuation.py
@@ -237,7 +275,12 @@ OSM_DISTANCE_FEATURES = [
     "dist_restaurant_km", "dist_hospital_km", "dist_pharmacy_km",
     "dist_park_km", "dist_worship_km",
     "dist_beach_km", "dist_marina_km", "dist_airport_km",
+    "dist_kindergarten_km", "dist_university_km",
 ]
-OSM_KEY_LOCATION_FEATURES = [f"dist_{name}_km" for name in KEY_LOCATIONS]
+# Collect all key location names across all countries
+_all_key_names = set()
+for cfg in COUNTRY_CONFIGS.values():
+    _all_key_names.update(cfg.get("key_locations", {}).keys())
+OSM_KEY_LOCATION_FEATURES = sorted([f"dist_{name}_km" for name in _all_key_names])
 OSM_DENSITY_FEATURES = ["poi_count_500m", "dining_count_500m"]
 OSM_ALL_FEATURES = OSM_DISTANCE_FEATURES + OSM_KEY_LOCATION_FEATURES + OSM_DENSITY_FEATURES

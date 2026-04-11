@@ -348,18 +348,30 @@ LLM run: bg_imot_v1_images (gemini-3.1-flash-lite-preview, with images, 9,751 en
 | Within 5% | 27.9% | +16.4pp |
 | Within 10% | 50.6% | **+25.2pp** |
 | Within 20% | 79.4% | **+30.7pp** |
-| Within 25% | 87.5% | **+29.5pp** |
+### With stratified CV + city prefix + ppsqm filter -- CURRENT BEST
+
+| Metric | Value | vs Baseline |
+|--------|-------|-------------|
+| MAPE | **12.6%** | **-14.5pp** |
+| R2 | 0.8218 | **+0.307** |
+| MAE | 18,107 EUR | **-47.4%** |
+| Within 5% | 28.2% | +16.7pp |
+| Within 10% | 52.0% | **+26.6pp** |
+| Within 20% | 80.1% | **+31.4pp** |
+| Within 25% | 88.0% | **+30.0pp** |
 
 ---
 
-## Malta sales -- stratified CV by locality -- CURRENT BEST (2026-04-10)
+## Malta sales -- CURRENT BEST (2026-04-10)
+
+Stratified CV by locality, price/sqm outlier filter (>30K or <100 EUR/sqm), geocoded location references
 
 | Metric | Value | vs Baseline |
 |--------|-------|-------------|
 | MAPE | **12.1%** | **-15.1pp** |
-| R2 | 0.7791 | **+0.257** |
-| MAE | 85,142 EUR | **-44.2%** |
-| Within 5% | 36.4% | +21.0pp |
-| Within 10% | 59.7% | **+31.0pp** |
-| Within 20% | 81.8% | **+31.7pp** |
-| Within 25% | 87.2% | **+27.8pp** |
+| R2 | 0.7887 | **+0.267** |
+| MAE | 83,573 EUR | **-45.2%** |
+| Within 5% | 37.5% | +22.1pp |
+| Within 10% | 59.3% | **+30.6pp** |
+| Within 20% | 81.2% | **+31.1pp** |
+| Within 25% | 87.0% | **+27.6pp** |

@@ -189,7 +189,11 @@ Return a JSON object with these fields:
 - "ceiling_height" (string): "double", "high", "normal", or "unknown"
 - "noise_exposure" (string): "quiet", "moderate", "busy", or "unknown"
 - "lease_type" (string): "freehold", "leasehold", or "unknown"
-- "location_reference" (string or null): the most specific location mentioned in the description - a street name (e.g. "Triq il-Kbira"), bay/landmark (e.g. "Balluta Bay"), named building/complex (e.g. "Fort Cambridge"), or specific area (e.g. "Spinola"). Return the single most precise reference, or null if only the town name is mentioned."""
+- "location_reference" (string or null): the most specific location mentioned in the description - a street name (e.g. "Triq il-Kbira"), bay/landmark (e.g. "Balluta Bay"), named building/complex (e.g. "Fort Cambridge"), or specific area (e.g. "Spinola"). Return the single most precise reference, or null if only the town name is mentioned.
+- "actual_living_area" (int or null): if description mentions the real/net/clean living area differs from the listed area (e.g. "clean area 34 sqm" or "59 sqm apartment + 80 sqm attic"), return the actual living area. Null if not mentioned.
+- "is_house_floor" (bool): true if the property is a floor/level of a house rather than a standard apartment in a multi-story building
+- "area_includes_extra" (bool): true if the listed area includes non-living space like attic, basement, storage, common parts, or garden
+- "data_quality_note" (string or null): any concern about data accuracy - e.g. "area includes 80sqm attic", "price may be per sqm not total", "property is actually a house floor". Null if data looks normal."""
 
 IMAGE_FIELDS_SCHEMA = """
 - "interior_score" (int 1-5): overall interior quality visible in photos
@@ -375,6 +379,10 @@ TEXT_FIELDS = {
     "noise_exposure": str,
     "lease_type": str,
     "location_reference": (str, type(None)),
+    "actual_living_area": (int, type(None)),
+    "is_house_floor": bool,
+    "area_includes_extra": bool,
+    "data_quality_note": (str, type(None)),
 }
 
 IMAGE_FIELDS = {

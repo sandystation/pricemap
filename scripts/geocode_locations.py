@@ -51,19 +51,26 @@ def save_cache(cache: dict):
         json.dump(cache, f, indent=2)
 
 
-def geocode_nominatim(query: str, locality: str | None = None) -> dict | None:
+def geocode_nominatim(query: str, locality: str | None = None, country: str | None = None) -> dict | None:
     """Geocode a location reference via Nominatim. Returns {lat, lon} or None."""
+    # Detect country from locality hints
+    cc = "mt"  # default
+    country_name = "Malta"
+    if country == "BG" or (locality and any(ord(c) > 0x400 for c in locality)):
+        cc = "bg"
+        country_name = "Bulgaria"
+
     # Try progressively less specific queries
     queries = []
     if locality:
-        queries.append(f"{query}, {locality}, Malta")
-    queries.append(f"{query}, Malta")
+        queries.append(f"{query}, {locality}, {country_name}")
+    queries.append(f"{query}, {country_name}")
 
     for q in queries:
         try:
             resp = httpx.get(
                 NOMINATIM_URL,
-                params={"q": q, "format": "json", "limit": 1, "countrycodes": "mt"},
+                params={"q": q, "format": "json", "limit": 1, "countrycodes": cc},
                 headers=NOMINATIM_HEADERS,
                 timeout=10,
             )
@@ -97,20 +104,31 @@ def collect_unique_refs(run_id: str) -> dict[str, set]:
         # Try to get locality from doc_id prefix (mt_remax:...)
         # We'll pass locality at geocode time from the enrichment data
 
-    # Also load with localities from DocStore
+    # Load localities from DocStore -- detect collection from doc_id prefix
     from docstore import DocStore
     store = DocStore()
-    coll = store.collection("mt_remax")
-    coll._ensure_loaded()
+    collections_loaded = {}
 
     for doc_id, features in data.items():
         loc_ref = features.get("location_reference")
         if not loc_ref:
             continue
         ref_lower = loc_ref.strip().lower()
-        doc = coll._docs.get(doc_id)
+
+        # Detect collection from doc_id (e.g., "mt_remax:123" or "bg_imot:456")
+        coll_name = doc_id.split(":")[0] if ":" in doc_id else "mt_remax"
+        if coll_name not in collections_loaded:
+            coll = store.collection(coll_name)
+            coll._ensure_loaded()
+            collections_loaded[coll_name] = coll
+
+        doc = collections_loaded[coll_name]._docs.get(doc_id)
         if doc:
-            locality = doc.get("current", {}).get("locality", "")
+            cur = doc.get("current", {})
+            # Use address_raw (e.g., "Витоша, Sofia") which includes city name,
+            # not just locality (e.g., "Витоша") which is only the neighborhood
+            addr = cur.get("address_raw", "")
+            locality = addr if addr else cur.get("locality", "")
             refs[ref_lower]["localities"].add(locality)
 
     store.close()
@@ -122,12 +140,29 @@ def collect_unique_refs(run_id: str) -> dict[str, set]:
     return refs
 
 
+def _detect_country_from_run(run_id: str) -> str | None:
+    """Detect country from run metadata or collection name."""
+    meta_path = os.path.join(ENRICHMENTS_DIR, run_id, "metadata.json")
+    if os.path.exists(meta_path):
+        with open(meta_path) as f:
+            meta = json.load(f)
+        collection = meta.get("collection", "")
+        if "bg_" in collection:
+            return "BG"
+        if "mt_" in collection:
+            return "MT"
+    return None
+
+
 def geocode_refs(run_id: str):
     """Geocode all unique location references from an enrichment run."""
     refs = collect_unique_refs(run_id)
     cache = load_cache()
+    country = _detect_country_from_run(run_id)
 
     logger.info(f"Unique location references: {len(refs)}")
+    if country:
+        logger.info(f"Detected country: {country}")
 
     to_geocode = []
     for ref_lower, info in refs.items():
@@ -151,7 +186,7 @@ def geocode_refs(run_id: str):
 
     try:
         for i, (ref_lower, original, locality, cache_key) in enumerate(to_geocode):
-            result = geocode_nominatim(original, locality)
+            result = geocode_nominatim(original, locality, country=country)
             cache[cache_key] = result
 
             if result:
@@ -248,8 +283,7 @@ def build_coordinate_overrides(run_id: str) -> dict[str, tuple[float, float]]:
 
     from docstore import DocStore
     store = DocStore()
-    coll = store.collection("mt_remax")
-    coll._ensure_loaded()
+    collections_loaded = {}
 
     overrides = {}
     for doc_id, features in data.items():
@@ -258,7 +292,15 @@ def build_coordinate_overrides(run_id: str) -> dict[str, tuple[float, float]]:
             continue
 
         ref_lower = loc_ref.strip().lower()
-        doc = coll._docs.get(doc_id)
+
+        # Load the right collection based on doc_id prefix
+        coll_name = doc_id.split(":")[0] if ":" in doc_id else "mt_remax"
+        if coll_name not in collections_loaded:
+            coll = store.collection(coll_name)
+            coll._ensure_loaded()
+            collections_loaded[coll_name] = coll
+
+        doc = collections_loaded[coll_name]._docs.get(doc_id)
         locality = doc.get("current", {}).get("locality", "") if doc else ""
         cache_key = f"{ref_lower}|{locality}"
 

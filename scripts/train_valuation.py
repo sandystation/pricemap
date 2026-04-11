@@ -194,6 +194,89 @@ AMENITY_FEATURES = list(AMENITY_KEYWORDS.keys()) + ["is_premium_zone", "is_gozo"
 CATEGORICAL_FEATURES = ["locality_enc", "province_enc"]
 
 # ---------------------------------------------------------------------------
+# Structured source-specific features
+# ---------------------------------------------------------------------------
+# bg_imot has floor, total_floors, construction_type in structured data
+# These override LLM-extracted values when available (more reliable)
+CONSTRUCTION_TYPE_MAP = {"panel": 1, "epk": 2, "brick": 3}
+
+# Bulgarian month names for date parsing
+_BG_MONTHS = {
+    "януари": 1, "февруари": 2, "март": 3, "април": 4,
+    "май": 5, "юни": 6, "юли": 7, "август": 8,
+    "септември": 9, "октомври": 10, "ноември": 11, "декември": 12,
+}
+
+
+def _parse_listing_date(date_str: str):
+    """Parse listing date from ISO or Bulgarian format. Returns datetime or None."""
+    from datetime import datetime, timezone
+    import re
+
+    if not date_str:
+        return None
+
+    # ISO format: 2026-02-16T10:34:49.443
+    if date_str[:4].isdigit() and "-" in date_str[:5]:
+        try:
+            return datetime.fromisoformat(date_str.replace("Z", "+00:00")).replace(tzinfo=timezone.utc)
+        except (ValueError, TypeError):
+            pass
+
+    # Bulgarian format: "5 април, 2026"
+    match = re.match(r"(\d{1,2})\s+(\w+),?\s*(\d{4})", date_str)
+    if match:
+        day, month_bg, year = match.groups()
+        month_num = _BG_MONTHS.get(month_bg.lower())
+        if month_num:
+            try:
+                return datetime(int(year), month_num, int(day), tzinfo=timezone.utc)
+            except ValueError:
+                pass
+
+    return None
+
+
+# Load city/town populations for population-based features
+_POP_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "osm_cache", "city_populations.json")
+_CITY_POPULATIONS: dict[str, int] = {}
+if os.path.exists(_POP_PATH):
+    with open(_POP_PATH) as _f:
+        for _country_pops in json.load(_f).values():
+            _CITY_POPULATIONS.update(_country_pops)
+
+
+def _get_population(cur: dict) -> float | None:
+    """Get city/town population for a property."""
+    # Try locality directly
+    locality = cur.get("locality", "")
+    pop = _CITY_POPULATIONS.get(locality)
+    if pop:
+        return float(pop)
+
+    # For bg_imot: locality is "Център, Sofia" -- extract city name
+    if "," in locality:
+        city = locality.split(",")[-1].strip()
+        pop = _CITY_POPULATIONS.get(city)
+        if pop:
+            return float(pop)
+
+    # Try address_raw city part
+    addr = cur.get("address_raw", "")
+    if "," in addr:
+        city = addr.split(",")[-1].strip()
+        pop = _CITY_POPULATIONS.get(city)
+        if pop:
+            return float(pop)
+
+    return None
+
+
+EXTRA_NUMERIC_FEATURES = ["struct_floor", "struct_total_floors", "listing_age_days", "listing_year",
+                          "city_population", "city_population_log"]
+EXTRA_CATEGORICAL_FEATURES = {"construction_type": CONSTRUCTION_TYPE_MAP}
+
+# ---------------------------------------------------------------------------
 # LLM-extracted features (from llm_enrich.py)
 # ---------------------------------------------------------------------------
 LLM_NUMERIC_FEATURES = [
@@ -341,6 +424,20 @@ def load_training_data(
             skipped["no_area"] += 1
             continue
 
+        # Price per sqm sanity check (catches mistyped prices)
+        if area and area > 0 and price > 0:
+            ppsqm = price / area
+            if listing_type == "sale" and (ppsqm > 30_000 or ppsqm < 100):
+                skipped["price_outlier"] += 1
+                continue
+
+        # For bg_imot: combine city + neighborhood as locality
+        # (e.g., "Център" exists in 9 cities at wildly different prices)
+        addr = cur.get("address_raw", "")
+        if "," in addr and doc.get("country", cur.get("country_code", "")) == "BG":
+            city = addr.split(",")[-1].strip()
+            cur["locality"] = f"{cur.get('locality', '')}, {city}"
+
         # Store cleaned area and doc_id for feature building
         cur["_clean_area"] = area
         cur["_doc_id"] = doc.get("_id", "")
@@ -460,6 +557,43 @@ def build_dataframe(
             lat, lon = coord_overrides[doc_id]
             n_refined += 1
 
+        # Structured source-specific features (bg_imot has floor/construction_type)
+        struct_floor = cur.get("floor")
+        struct_floor = float(struct_floor) if struct_floor is not None else np.nan
+        struct_total_floors = cur.get("total_floors")
+        struct_total_floors = float(struct_total_floors) if struct_total_floors is not None else np.nan
+        ct = cur.get("construction_type", "")
+        construction_type = float(CONSTRUCTION_TYPE_MAP.get(ct, 0)) if ct else np.nan
+
+        # Temporal features from listing date
+        listing_age_days = np.nan
+        listing_year = np.nan
+
+        # For bg_imot: extract real creation date from the obiava ID in the URL
+        # URL format: obiava-1b176839608204609-... where digits 3-12 are Unix timestamp
+        url = cur.get("url", "")
+        creation_date = None
+        if url:
+            import re as _re
+            id_match = _re.search(r'obiava-\w{2}(\d{10})', url)
+            if id_match:
+                ts = int(id_match.group(1))
+                if 1400000000 < ts < 2000000000:
+                    from datetime import datetime, timezone
+                    creation_date = datetime.fromtimestamp(ts, tz=timezone.utc)
+
+        # Fall back to listing_date / last_modified for other sources
+        if not creation_date:
+            date_str = cur.get("listing_date") or cur.get("last_modified") or ""
+            if date_str:
+                creation_date = _parse_listing_date(str(date_str))
+
+        if creation_date:
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            listing_age_days = (now - creation_date).days
+            listing_year = creation_date.year + creation_date.month / 12.0
+
         dists = compute_distances(lat, lon)
         osm = compute_osm_features(lat, lon)
 
@@ -472,13 +606,27 @@ def build_dataframe(
         locality = cur.get("locality", "")
         is_gozo = 1.0 if locality.startswith("Gozo") or cur.get("province") == "Gozo" else 0.0
 
+        # Use LLM-corrected area if available (catches attic/common parts inflation)
+        area = cur.get("_clean_area", np.nan)
+        if llm_run and doc_id in llm_run:
+            actual_area = llm_run[doc_id].get("actual_living_area")
+            if actual_area and actual_area > 10:
+                area = float(actual_area)
+
         rows.append({
             "price_eur": cur["price_eur"],
             "lat": lat,
             "lon": lon,
-            "area_sqm": cur.get("_clean_area", np.nan),
+            "area_sqm": area,
             "is_premium_zone": is_premium,
             "is_gozo": is_gozo,
+            "struct_floor": struct_floor,
+            "struct_total_floors": struct_total_floors,
+            "construction_type": construction_type,
+            "listing_age_days": listing_age_days,
+            "listing_year": listing_year,
+            "city_population": _get_population(cur),
+            "city_population_log": math.log(_get_population(cur)) if _get_population(cur) else np.nan,
             **dists,
             **osm,
             "bedrooms": cur.get("bedrooms") or np.nan,
@@ -517,6 +665,7 @@ def get_feature_names() -> list[str]:
     """Return the ordered list of feature column names."""
     return (
         NUMERIC_FEATURES + AMENITY_FEATURES + CATEGORICAL_FEATURES
+        + EXTRA_NUMERIC_FEATURES + list(EXTRA_CATEGORICAL_FEATURES.keys())
         + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
         + list(LLM_ORDINAL_FEATURES.keys())
         + list(LLM_CATEGORICAL_FEATURES.keys())
@@ -646,6 +795,7 @@ def train_and_evaluate(
     # Indices of categorical features in the feature matrix
     all_cat_names = (
         ["locality_enc", "province_enc"]
+        + list(EXTRA_CATEGORICAL_FEATURES.keys())
         + list(LLM_CATEGORICAL_FEATURES.keys())
         + list(LLM_IMAGE_CATEGORICAL.keys())
     )
@@ -653,6 +803,7 @@ def train_and_evaluate(
 
     base_cols = (
         NUMERIC_FEATURES + AMENITY_FEATURES
+        + EXTRA_NUMERIC_FEATURES + list(EXTRA_CATEGORICAL_FEATURES.keys())
         + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
         + list(LLM_ORDINAL_FEATURES.keys())
         + list(LLM_CATEGORICAL_FEATURES.keys())
@@ -834,9 +985,10 @@ def print_dry_run_stats(df: pd.DataFrame, listing_type: str):
           f"median={p.median():,.0f}  P95={p.quantile(0.95):,.0f}  max={p.max():,.0f}")
 
     print(f"\nFeature coverage:")
-    for col in NUMERIC_FEATURES + AMENITY_FEATURES:
-        n_valid = df[col].notna().sum()
-        print(f"  {col:20s}: {n_valid:>5d}/{len(df)} ({100 * n_valid / len(df):5.1f}%)")
+    for col in NUMERIC_FEATURES + AMENITY_FEATURES + EXTRA_NUMERIC_FEATURES + list(EXTRA_CATEGORICAL_FEATURES.keys()):
+        if col in df.columns:
+            n_valid = df[col].notna().sum()
+            print(f"  {col:25s}: {n_valid:>5d}/{len(df)} ({100 * n_valid / len(df):5.1f}%)")
 
     llm_cols = (
         LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
