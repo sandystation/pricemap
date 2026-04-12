@@ -272,7 +272,7 @@ def call_anthropic(client, model: str, user_prompt: str, images: list[dict]) -> 
 
     resp = client.messages.create(
         model=model,
-        max_tokens=2048,
+        max_tokens=4096,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": content}],
     )
@@ -290,7 +290,7 @@ def call_openai(client, model: str, user_prompt: str, images: list[dict]) -> str
 
     resp = client.chat.completions.create(
         model=model,
-        max_tokens=2048,
+        max_tokens=4096,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": content},
@@ -315,7 +315,7 @@ def call_google(client, model: str, user_prompt: str, images: list[dict]) -> str
         contents=contents,
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
-            max_output_tokens=400,
+            max_output_tokens=4096,
         ),
     )
     return resp.text

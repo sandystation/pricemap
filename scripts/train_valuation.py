@@ -649,6 +649,7 @@ def build_dataframe(
             **amenities,
             **llm,
             "_llm_model": llm_model,
+            "_doc_id": doc_id,
         })
     if n_refined:
         logger.info(f"Refined coordinates for {n_refined}/{len(docs)} docs via geocoded location_reference")
