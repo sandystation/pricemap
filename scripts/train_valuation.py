@@ -189,7 +189,7 @@ def compute_distances(lat: float, lon: float) -> dict:
 
     return {"dist_coast_km": round(coast_km, 3), "dist_cbd_km": round(cbd_km, 3)}
 
-AMENITY_FEATURES = list(AMENITY_KEYWORDS.keys()) + ["is_premium_zone", "is_gozo"]
+AMENITY_FEATURES = list(AMENITY_KEYWORDS.keys()) + ["is_premium_zone", "is_gozo", "is_resort"]
 
 CATEGORICAL_FEATURES = ["locality_enc", "province_enc"]
 
@@ -199,6 +199,10 @@ CATEGORICAL_FEATURES = ["locality_enc", "province_enc"]
 # bg_imot has floor, total_floors, construction_type in structured data
 # These override LLM-extracted values when available (more reliable)
 CONSTRUCTION_TYPE_MAP = {"panel": 1, "epk": 2, "brick": 3}
+
+# Resort/seasonal neighborhoods (rent is seasonal, not year-round)
+_RESORT_KEYWORDS = ["к.к.", "Златни пясъци", "Слънчев бряг", "Слънчев ден",
+                    "Ален мак", "Св.Св. Константин", "Елените", "Приморско"]
 
 # Bulgarian month names for date parsing
 _BG_MONTHS = {
@@ -273,7 +277,8 @@ def _get_population(cur: dict) -> float | None:
 
 
 EXTRA_NUMERIC_FEATURES = ["struct_floor", "struct_total_floors", "listing_age_days", "listing_year",
-                          "city_population", "city_population_log"]
+                          "city_population", "city_population_log", "area_sqm_log",
+                          "rental_density_2km"]
 EXTRA_CATEGORICAL_FEATURES = {"construction_type": CONSTRUCTION_TYPE_MAP}
 
 # ---------------------------------------------------------------------------
@@ -531,6 +536,7 @@ def build_dataframe(
     docs: list[dict],
     llm_run: dict[str, dict] | None = None,
     coord_overrides: dict[str, tuple[float, float]] | None = None,
+    rental_coords: list[tuple[float, float]] | None = None,
 ) -> pd.DataFrame:
     """Convert list of property dicts to a feature DataFrame.
 
@@ -538,7 +544,16 @@ def build_dataframe(
     those features are used instead of llm_* fields in the doc.
     If coord_overrides is provided (doc_id -> (lat, lon)), geocoded
     coordinates replace town-level ones for distance calculations.
+    If rental_coords is provided, computes rental_density_2km for each property.
     """
+    # Build KDTree for rental density computation
+    _rental_tree = None
+    if rental_coords:
+        from scipy.spatial import cKDTree
+        _rental_tree = cKDTree(
+            [(lat * 111.0, lon * 89.0) for lat, lon in rental_coords]
+        )
+
     rows = []
     n_refined = 0
     for cur in docs:
@@ -619,6 +634,9 @@ def build_dataframe(
         locality = cur.get("locality", "")
         is_gozo = 1.0 if locality.startswith("Gozo") or cur.get("province") == "Gozo" else 0.0
 
+        # Resort: seasonal rental market (Bulgarian coastal resorts)
+        is_resort = 1.0 if any(kw in locality for kw in _RESORT_KEYWORDS) else 0.0
+
         # Use LLM-corrected area if available (catches attic/common parts inflation)
         area = cur.get("_clean_area", np.nan)
         if llm_run and doc_id in llm_run:
@@ -626,13 +644,22 @@ def build_dataframe(
             if actual_area and actual_area > 10:
                 area = float(actual_area)
 
+        # Rental density: count of rental listings within 2km
+        rental_density = np.nan
+        if _rental_tree is not None:
+            pts = _rental_tree.query_ball_point([lat * 111.0, lon * 89.0], r=2.0)
+            rental_density = float(len(pts))
+
         rows.append({
             "price_eur": cur["price_eur"],
             "lat": lat,
             "lon": lon,
             "area_sqm": area,
+            "area_sqm_log": math.log(area) if not (isinstance(area, float) and np.isnan(area)) and area > 0 else np.nan,
             "is_premium_zone": is_premium,
             "is_gozo": is_gozo,
+            "is_resort": is_resort,
+            "rental_density_2km": rental_density,
             "struct_floor": struct_floor,
             "struct_total_floors": struct_total_floors,
             "construction_type": construction_type,
@@ -1111,8 +1138,28 @@ def main():
         logger.error(f"Only {len(docs)} samples -- need at least 50 to train.")
         sys.exit(1)
 
+    # Load rental coordinates for rental_density_2km feature
+    rental_coords = None
+    store2 = DocStore()
+    for coll_name in collection_list:
+        coll2 = store2.collection(coll_name)
+        coords = []
+        for doc in coll2.find():
+            cur = doc.get("current", {})
+            if cur.get("listing_type") == "rent" and cur.get("property_type") == "apartment":
+                rlat = cur.get("map_lat") or cur.get("lat")
+                rlon = cur.get("map_lon") or cur.get("lon")
+                if rlat and rlon:
+                    coords.append((rlat, rlon))
+        if coords:
+            rental_coords = coords
+    store2.close()
+    if rental_coords:
+        logger.info(f"Loaded {len(rental_coords)} rental coords for density feature")
+
     # Build DataFrame
-    df = build_dataframe(docs, llm_run=llm_run_data, coord_overrides=coord_overrides)
+    df = build_dataframe(docs, llm_run=llm_run_data, coord_overrides=coord_overrides,
+                         rental_coords=rental_coords)
     logger.info(
         f"DataFrame: {len(df)} rows, "
         f"area_sqm coverage: {df['area_sqm'].notna().sum()}/{len(df)} "

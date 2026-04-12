@@ -100,8 +100,23 @@ def train_rent_model(collections, llm_runs):
     except:
         pass
 
+    # Load rental coords for density feature
+    from docstore import DocStore as _DS
+    _s = _DS()
+    rental_coords = []
+    for cn in collections:
+        for doc in _s.collection(cn).find():
+            cur = doc.get("current", {})
+            if cur.get("listing_type") == "rent" and cur.get("property_type") == "apartment":
+                rlat = cur.get("map_lat") or cur.get("lat")
+                rlon = cur.get("map_lon") or cur.get("lon")
+                if rlat and rlon:
+                    rental_coords.append((rlat, rlon))
+    _s.close()
+
     docs = load_training_data("rent", "apartment", collections=collections)
-    df = build_dataframe(docs, llm_run=llm_data, coord_overrides=coord_overrides)
+    df = build_dataframe(docs, llm_run=llm_data, coord_overrides=coord_overrides,
+                         rental_coords=rental_coords)
     feature_names = get_feature_names()
     log_target = np.log(df["price_eur"].values)
 
@@ -168,10 +183,24 @@ def calculate_yields(collections, llm_runs, city_filter=None, min_yield=0, top_n
     logger.info("Training rent model...")
     lgb_m, xgb_m, feature_names, loc_map, prov_map, cat_indices = train_rent_model(collections, llm_runs)
 
+    # Load rental coords for density feature
+    _s2 = DocStore()
+    rental_coords = []
+    for cn in collections:
+        for doc in _s2.collection(cn).find():
+            cur = doc.get("current", {})
+            if cur.get("listing_type") == "rent" and cur.get("property_type") == "apartment":
+                rlat = cur.get("map_lat") or cur.get("lat")
+                rlon = cur.get("map_lon") or cur.get("lon")
+                if rlat and rlon:
+                    rental_coords.append((rlat, rlon))
+    _s2.close()
+
     # Load sale properties
     logger.info("Loading sale properties...")
     sale_docs = load_training_data("sale", "apartment", collections=collections)
-    df_sale = build_dataframe(sale_docs, llm_run=llm_data, coord_overrides=coord_overrides)
+    df_sale = build_dataframe(sale_docs, llm_run=llm_data, coord_overrides=coord_overrides,
+                              rental_coords=rental_coords)
 
     # Filter by city if requested
     if city_filter:
