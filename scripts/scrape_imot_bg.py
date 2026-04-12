@@ -243,37 +243,58 @@ def parse_detail_page(html: str, url: str) -> dict:
         else:
             data["vat_status"] = "unknown"
 
-    # Publication date
+    # Publication date and view count
     info_el = soup.select_one("div.adPrice .info")
     if info_el:
+        info_text = info_el.get_text()
         date_match = re.search(
-            r"(\d{1,2})\s+(\w+),?\s+(\d{4})", info_el.get_text()
+            r"(\d{1,2})\s+(\w+),?\s+(\d{4})", info_text
         )
         if date_match:
             data["listing_date_raw"] = date_match.group(0)
+        views = re.search(r"посетена\s+(\d+)", info_text)
+        if views:
+            data["view_count"] = int(views.group(1))
 
-    # Property parameters (area, floor, construction)
+    # Property parameters (area, floor, construction, utilities)
     params = soup.select("div.adParams div")
     for param in params:
         text = param.get_text(separator=" ").strip()
-        # Area
-        area_match = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:m²|кв\.?\s*м)", text)
-        if area_match:
-            data["area_sqm"] = float(area_match.group(1).replace(",", "."))
-        # Floor
-        floor_match = re.search(r"Етаж[а-я]*\s*(?:на\s*)?(\d+)", text)
-        if floor_match:
-            data["floor"] = int(floor_match.group(1))
-        total_match = re.search(r"от\s*(\d+)", text)
-        if total_match:
-            data["total_floors"] = int(total_match.group(1))
-        # Construction type
-        if "Тух" in text or "тухл" in text.lower():
-            data["construction_type"] = "brick"
-        elif "Панел" in text or "панел" in text.lower():
-            data["construction_type"] = "panel"
-        elif "ЕПК" in text:
-            data["construction_type"] = "epk"
+        # Area (only "Площ:", not "Двор:"); format is "Площ: 60 m 2"
+        if "Площ" in text:
+            area_match = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:m\s*2|m²|кв\.?\s*м)", text)
+            if area_match:
+                data["area_sqm"] = float(area_match.group(1).replace(",", "."))
+        # Floor: ordinal format "8-ми от 8", "2-ри от 7", "Партер от 1"
+        if "Етаж" in text or "Партер" in text:
+            fl = re.search(r"(\d+)\s*[-–]?\s*(?:ти|ри|ви|ми|ет)", text)
+            if fl:
+                data["floor"] = int(fl.group(1))
+            elif "Партер" in text:
+                data["floor"] = 0
+            total_match = re.search(r"от\s*(\d+)", text)
+            if total_match:
+                data["total_floors"] = int(total_match.group(1))
+        # Construction type + year built + completion status
+        if "Строителство" in text:
+            if "Тух" in text or "тухл" in text.lower():
+                data["construction_type"] = "brick"
+            elif "Панел" in text or "панел" in text.lower():
+                data["construction_type"] = "panel"
+            elif "ЕПК" in text:
+                data["construction_type"] = "epk"
+            yr = re.search(r"(\d{4})\s*(?:[-–]\s*(\d{4}))?\s*г\.", text)
+            if yr:
+                data["year_built"] = int(yr.group(2) or yr.group(1))
+            if "Ще бъде въведен" in text:
+                data["completion_status"] = "planned"
+            elif "Въведен в експлоатация" in text:
+                data["completion_status"] = "completed"
+        # Gas and central heating
+        if "Газ:" in text:
+            data["has_gas"] = 1 if "ДА" in text else 0
+        if "ТEЦ:" in text or "ТЕЦ:" in text:
+            data["has_central_heating"] = 1 if "ДА" in text else 0
 
     # Full description
     desc_el = soup.select_one("div.moreInfo .text, div.moreInfo")
@@ -292,6 +313,11 @@ def parse_detail_page(html: str, url: str) -> dict:
         data["has_elevator"] = 1 if "асансьор" in amenities_lower else 0
         data["has_balcony"] = 1 if "балкон" in amenities_lower or "тераса" in amenities_lower else 0
         data["has_garden"] = 1 if "градин" in amenities_lower or "двор" in amenities_lower else 0
+        data["has_ac"] = 1 if "климатик" in amenities_lower else 0
+        data["has_access_control"] = 1 if "контрол на достъпа" in amenities_lower else 0
+        data["has_cctv"] = 1 if "видео наблюдение" in amenities_lower or "видеонаблюдение" in amenities_lower else 0
+        data["is_insulated"] = 1 if "саниран" in amenities_lower else 0
+        data["has_internet"] = 1 if "интернет" in amenities_lower else 0
 
     # Phone
     phone_el = soup.select_one("div.phone, div.dealer2023 .phone")
@@ -415,7 +441,7 @@ def scrape_city(client, coll, city_slug: str, city_name: str, listing_type: str 
 
             # Also try extracting area from search info text
             if not detail.get("area_sqm") and listing.get("info_text"):
-                area_match = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:кв\.?\s*м|m²|m2)", listing["info_text"])
+                area_match = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:кв\.?\s*м|m\s*2|m²)", listing["info_text"])
                 if area_match:
                     detail["area_sqm"] = float(area_match.group(1).replace(",", "."))
 

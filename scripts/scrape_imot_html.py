@@ -52,6 +52,7 @@ LISTING_TYPES = ["sale", "rent"]
 # Property type sub-slugs for breaking the 1000/city pagination limit
 # Crawl each type separately to get all listings
 PROPERTY_TYPE_SLUGS = [
+    "",              # all types (main page, catches anything not in sub-categories)
     "ednostaen",     # 1-room apartment
     "dvustaen",      # 2-room apartment
     "tristaen",      # 3-room apartment
@@ -145,7 +146,10 @@ def collect_listing_urls(listing_type: str, parallel: int = 3) -> list[tuple[str
     crawl_tasks = []
     for city_slug, city_name in CITIES:
         for prop_slug in PROPERTY_TYPE_SLUGS:
-            base_url = f"{BASE}/obiavi/{type_slug}/{city_slug}/{prop_slug}"
+            if prop_slug:
+                base_url = f"{BASE}/obiavi/{type_slug}/{city_slug}/{prop_slug}"
+            else:
+                base_url = f"{BASE}/obiavi/{type_slug}/{city_slug}"
             crawl_tasks.append((base_url, city_name, city_slug, prop_slug))
 
     logger.info(

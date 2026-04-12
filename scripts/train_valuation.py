@@ -388,11 +388,14 @@ def load_training_data(
             skipped["no_price"] += 1
             continue
 
-        lat = cur.get("lat")
-        lon = cur.get("lon")
+        lat = cur.get("lat") or cur.get("map_lat")
+        lon = cur.get("lon") or cur.get("map_lon")
         if not lat or not lon:
             skipped["no_coords"] += 1
             continue
+        # Ensure lat/lon keys exist for build_dataframe
+        cur["lat"] = lat
+        cur["lon"] = lon
 
         # Rental period filter
         if listing_type == "rent":

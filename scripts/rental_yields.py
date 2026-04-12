@@ -14,8 +14,11 @@ Usage (run from scripts/ directory):
 
 import argparse
 import logging
+import math
 import os
+import re
 import sys
+from datetime import datetime, timezone
 
 import joblib
 import numpy as np
@@ -39,6 +42,28 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 ARTIFACTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ml", "artifacts")
+
+
+def _listing_age_days(url: str) -> int | None:
+    """Extract listing age in days from imot.bg URL (obiava ID encodes Unix timestamp)."""
+    m = re.search(r'obiava-\w{2}(\d{10})', url or "")
+    if m:
+        ts = int(m.group(1))
+        if 1400000000 < ts < 2000000000:
+            return (datetime.now(timezone.utc) - datetime.fromtimestamp(ts, tz=timezone.utc)).days
+    return None
+
+
+def _format_age(days) -> str:
+    """Format age in days as a compact string like '42d' or '3m' or '1.2y'."""
+    if days is None or (isinstance(days, float) and pd.isna(days)):
+        return "?d"
+    days = int(days)
+    if days < 60:
+        return f"{days}d"
+    if days < 365:
+        return f"{days // 30}m"
+    return f"{days / 365:.1f}y"
 
 base_cols = (
     NUMERIC_FEATURES + AMENITY_FEATURES
@@ -120,7 +145,7 @@ def predict_rent(lgb_m, xgb_m, feature_names, df_sale, loc_map, prov_map, cat_in
 
 
 def calculate_yields(collections, llm_runs, city_filter=None, min_yield=0, top_n=20,
-                     investable_only=False, max_age_days=365):
+                     investable_only=False, max_age_days=365, min_rentals=0):
     """Calculate rental yields for sale properties."""
     # Load LLM data
     llm_data = {}
@@ -191,6 +216,32 @@ def calculate_yields(collections, llm_runs, city_filter=None, min_yield=0, top_n
         logger.info(f"Investable filter: {before} -> {len(df_sale)} "
                      f"(removed {before - len(df_sale)} under-construction/shell/stale)")
 
+    # Filter by min rentals in the city (to ensure rent prediction is reliable)
+    if min_rentals > 0:
+        store_tmp = DocStore()
+        coll_tmp = store_tmp.collection(collections[0])
+        coll_tmp._ensure_loaded()
+
+        from collections import Counter
+        city_rental_counts = Counter()
+        for doc in coll_tmp._docs.values():
+            cur = doc.get("current", {})
+            if cur.get("listing_type") == "rent" and cur.get("property_type") == "apartment":
+                addr = cur.get("address_raw", "")
+                city = addr.split(",")[-1].strip() if "," in addr else ""
+                if city:
+                    city_rental_counts[city] += 1
+        store_tmp.close()
+
+        def _get_city(locality):
+            return str(locality).split(",")[-1].strip() if "," in str(locality) else str(locality)
+
+        before = len(df_sale)
+        df_sale = df_sale[df_sale["locality"].apply(
+            lambda l: city_rental_counts.get(_get_city(l), 0) >= min_rentals
+        )]
+        logger.info(f"Min rentals filter (>={min_rentals}): {before} -> {len(df_sale)}")
+
     # Filter by min yield
     df_sale = df_sale[df_sale["gross_yield"] >= min_yield]
 
@@ -213,6 +264,75 @@ def calculate_yields(collections, llm_runs, city_filter=None, min_yield=0, top_n
         }
     store.close()
 
+    # Load rental comparables for each sale property
+    store2 = DocStore()
+    coll2 = store2.collection(collections[0])
+    coll2._ensure_loaded()
+
+    # Build rental index: (lat, lon, price, rooms, area, locality, url, age)
+    rental_comps = []
+    for doc_id, doc in coll2._docs.items():
+        cur = doc.get("current", {})
+        if cur.get("listing_type") != "rent" or cur.get("property_type") != "apartment":
+            continue
+        lat = cur.get("map_lat") or cur.get("lat")
+        lon = cur.get("map_lon") or cur.get("lon")
+        price = cur.get("price_eur")
+        if lat and lon and price and price > 0:
+            llm_f = llm_data.get(doc_id, {})
+            rental_comps.append({
+                "lat": lat, "lon": lon, "price": price,
+                "rooms": cur.get("rooms"),
+                "area_sqm": cur.get("area_sqm") or llm_f.get("actual_living_area"),
+                "condition": llm_f.get("condition"),
+                "locality": cur.get("locality", ""),
+                "url": cur.get("url", ""),
+                "age_days": _listing_age_days(cur.get("url")),
+            })
+    store2.close()
+
+    def find_similar_rentals(lat, lon, rooms, area_sqm, condition, max_km=5.0, max_results=3):
+        """Find most similar actual rental listings using a weighted similarity score.
+
+        Similarity factors (lower = more similar):
+        - Distance: 0-5km, weight 3x (location is king)
+        - Room diff: 0-3 rooms, weight 2x
+        - Area diff: 0-50 sqm, weight 1x
+        - Condition diff: 0-4 levels, weight 0.5x
+        """
+        if not lat or not lon:
+            return []
+
+        candidates = []
+        for comp in rental_comps:
+            dlat = (comp["lat"] - lat) * 111.0
+            dlon = (comp["lon"] - lon) * 89.0
+            dist_km = math.sqrt(dlat**2 + dlon**2)
+            if dist_km > max_km:
+                continue
+
+            # Similarity score (lower = better)
+            score = 0.0
+            score += (dist_km / max_km) * 3.0  # distance: 0-3
+
+            if rooms and comp["rooms"]:
+                score += (abs(rooms - comp["rooms"]) / 3.0) * 2.0  # rooms: 0-2
+            else:
+                score += 1.0  # unknown penalty
+
+            if area_sqm and comp.get("area_sqm"):
+                score += (min(abs(area_sqm - comp["area_sqm"]), 50) / 50.0) * 1.0  # area: 0-1
+
+            if condition and comp.get("condition"):
+                score += (abs(condition - comp["condition"]) / 4.0) * 0.5  # condition: 0-0.5
+
+            candidates.append({**comp, "dist_km": round(dist_km, 2), "similarity": round(score, 2)})
+
+        candidates.sort(key=lambda r: r["similarity"])
+        return candidates[:max_results]
+
+    logger.info(f"Loaded {len(rental_comps)} rental comparables")
+
     # Print results
     print(f"\n{'='*110}")
     mode = "INVESTABLE ONLY" if investable_only else "ALL"
@@ -221,6 +341,8 @@ def calculate_yields(collections, llm_runs, city_filter=None, min_yield=0, top_n
         print(f"  City: {city_filter}")
     if investable_only:
         print(f"  Filters: completed, condition >= good, listed < {max_age_days} days")
+    if min_rentals > 0:
+        print(f"  Only cities with >= {min_rentals} rental listings")
     print(f"  {len(df_sale)} properties with yield >= {min_yield}%")
     print(f"{'='*110}")
 
@@ -251,15 +373,43 @@ def calculate_yields(collections, llm_runs, city_filter=None, min_yield=0, top_n
 
         warn_str = " ".join(warnings)
 
+        age_days = row.get("listing_age_days")
+        age_str = _format_age(age_days)
+
+        ppsqm = f"EUR {row['price_eur']/row['area_sqm']:,.0f}/m²" if not pd.isna(row["area_sqm"]) and row["area_sqm"] > 0 else ""
+
         print(
             f"{i+1:>3d}. {row['gross_yield']:>5.1f}% "
-            f"EUR {row['price_eur']:>9,.0f} "
+            f"EUR {row['price_eur']:>9,.0f} {ppsqm:>12s} "
             f"→ EUR {row['predicted_rent']:>6,.0f}/m "
-            f"| {area:>4}m² {rooms}rm {cond_label:>4s} "
+            f"| {area:>4}m² {rooms}rm {cond_label:>4s} {age_str:>4s} "
             f"| {locality}"
         )
         if url or warn_str:
             print(f"     {url}  {warn_str}")
+
+        # Find similar actual rentals nearby
+        sale_lat = row.get("lat")
+        sale_lon = row.get("lon") if not pd.isna(row.get("lon", float("nan"))) else None
+        sale_rooms = int(row["rooms"]) if not pd.isna(row["rooms"]) else None
+        sale_area = float(row["area_sqm"]) if not pd.isna(row["area_sqm"]) else None
+        sale_cond = int(row["llm_condition"]) if not pd.isna(row["llm_condition"]) else None
+
+        comps = find_similar_rentals(sale_lat, sale_lon, sale_rooms, sale_area, sale_cond)
+        if comps:
+            comp_prices = [c["price"] for c in comps]
+            avg_comp = sum(comp_prices) / len(comp_prices)
+            comp_yield = (avg_comp * 12 / row["price_eur"] * 100)
+            print(f"     Comps ({len(comps)}): avg EUR {avg_comp:,.0f}/m → comp yield {comp_yield:.1f}%")
+            for ci, c in enumerate(comps, 1):
+                rm = f"{c['rooms']}rm" if c['rooms'] else "?rm"
+                area_str = f"{c['area_sqm']:.0f}m²" if c.get('area_sqm') else "?m²"
+                psqm = f"EUR {c['price']/c['area_sqm']:.1f}/m²" if c.get('area_sqm') else ""
+                cage = _format_age(c.get("age_days"))
+                print(f"       {ci}. EUR {c['price']:,.0f}/m {psqm} | {rm} {area_str} {cage} | {c['dist_km']}km | {c['url']}")
+        else:
+            print(f"     No rental comparables within 5km")
+
         print()
 
     # Summary stats
@@ -295,6 +445,8 @@ def main():
                         help="Only show genuinely investable: completed, finished, listed < 1 year")
     parser.add_argument("--max-age", type=int, default=365,
                         help="Max listing age in days (default: 365, used with --investable)")
+    parser.add_argument("--min-rentals", type=int, default=0,
+                        help="Only include cities with this many rental listings (default: 0)")
     args = parser.parse_args()
 
     if args.country == "BG":
@@ -306,7 +458,8 @@ def main():
 
     calculate_yields(collections, llm_runs, city_filter=args.city,
                      min_yield=args.min_yield, top_n=args.top,
-                     investable_only=args.investable, max_age_days=args.max_age)
+                     investable_only=args.investable, max_age_days=args.max_age,
+                     min_rentals=args.min_rentals)
 
 
 if __name__ == "__main__":

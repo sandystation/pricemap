@@ -375,3 +375,45 @@ Stratified CV by locality, price/sqm outlier filter (>30K or <100 EUR/sqm), geoc
 | Within 10% | 59.3% | **+30.6pp** |
 | Within 20% | 81.2% | **+31.1pp** |
 | Within 25% | 87.0% | **+27.6pp** |
+
+---
+
+## Bulgaria (bg_imot) with full LLM enrichment + precise map coordinates - 2026-04-12
+
+Collection: bg_imot (54,109 docs)
+LLM run: `bg_imot_v2_full` (gemini-3.1-flash-lite-preview, with images, 52,183 enriched)
+GPS: 99% precise map coordinates (map_lat/map_lon from imot.bg), fallback to neighborhood geocoding
+Coordinate fallback: docs with only map_lat (no neighborhood lat) now included via fallback fix
+Rental geocoding: fixed "Наеми в " prefix stripping for 17,470 rental localities
+
+### Sales (apartment, bg_imot) -- CURRENT BEST
+
+| Metric | Value | vs Previous BG Sale |
+|--------|-------|---------------------|
+| Samples | 7,615 | +1,046 (+16%) |
+| MAPE | **12.1%** | -0.5pp |
+| R2 | 0.8389 | +0.017 |
+| MAE | 16,983 EUR | -6.2% |
+| Median AE | 10,807 EUR | |
+| Within 5% | 30.0% | +1.8pp |
+| Within 10% | 53.8% | +1.8pp |
+| Within 15% | 70.2% | |
+| Within 20% | 82.0% | +1.9pp |
+| Within 25% | 89.1% | +1.1pp |
+
+### Rents (apartment, bg_imot) -- CURRENT BEST
+
+| Metric | Value | vs Previous BG Rent |
+|--------|-------|---------------------|
+| Samples | 9,170 | +876 (+11%) |
+| MAPE | **13.5%** | +0.2pp |
+| R2 | 0.7496 | |
+| MAE | 94 EUR | |
+| Median AE | 57 EUR | |
+| Within 5% | 26.0% | |
+| Within 10% | 48.1% | |
+| Within 15% | 65.8% | |
+| Within 20% | 78.0% | |
+| Within 25% | 85.8% | |
+
+Note: Sale model improved slightly with 16% more training data from map_lat fallback. Rent model MAPE increased 0.2pp likely from newly included docs in industrial/suburban areas with less predictable rents. Both models now use full LLM enrichment from 52K docs (vs 9.7K in v1).
