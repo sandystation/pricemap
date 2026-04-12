@@ -232,6 +232,17 @@ def parse_detail_page(html: str, url: str) -> dict:
                     sqm_match.group(1).replace(" ", "").replace(",", ".")
                 )
 
+    # VAT status
+    price_section = soup.select_one("div.adPrice")
+    if price_section:
+        price_text_full = price_section.get_text()
+        if "без ДДС" in price_text_full:
+            data["vat_status"] = "excluded"
+        elif "с включено ДДС" in price_text_full:
+            data["vat_status"] = "included"
+        else:
+            data["vat_status"] = "unknown"
+
     # Publication date
     info_el = soup.select_one("div.adPrice .info")
     if info_el:
@@ -330,8 +341,15 @@ def detect_rooms(title: str) -> int | None:
     return None
 
 
-def scrape_city(client, coll, city_slug: str, city_name: str):
+LISTING_TYPE_SLUGS = {
+    "sale": "prodazhbi",
+    "rent": "naemi",
+}
+
+
+def scrape_city(client, coll, city_slug: str, city_name: str, listing_type: str = "sale"):
     """Scrape listings for a single city."""
+    type_slug = LISTING_TYPE_SLUGS[listing_type]
     items_scraped = 0
     items_new = 0
     errors = 0
@@ -339,9 +357,9 @@ def scrape_city(client, coll, city_slug: str, city_name: str):
     page = 1
     while page <= MAX_PAGES_PER_CITY:
         if page == 1:
-            url = f"{BASE}/obiavi/prodazhbi/{city_slug}"
+            url = f"{BASE}/obiavi/{type_slug}/{city_slug}"
         else:
-            url = f"{BASE}/obiavi/prodazhbi/{city_slug}/p-{page}"
+            url = f"{BASE}/obiavi/{type_slug}/{city_slug}/p-{page}"
 
         logger.info(f"Fetching search page: {url}")
         try:
@@ -442,8 +460,8 @@ def scrape_city(client, coll, city_slug: str, city_name: str):
                         detail["heating_type"] = en
                         break
 
-            # Use listing_type from breadcrumb, or detect from URL
-            listing_type = detail.get("listing_type", "sale")
+            # Use listing_type from breadcrumb, or fall back to what we're scraping
+            listing_type = detail.get("listing_type", listing_type)
 
             # Build property record
             title = detail.get("title", "")
@@ -520,6 +538,14 @@ def scrape_city(client, coll, city_slug: str, city_name: str):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Scrape imot.bg listings")
+    parser.add_argument(
+        "--listing-type", default="sale", choices=["sale", "rent"],
+        help="Listing type to scrape (default: sale)",
+    )
+    args = parser.parse_args()
+
     store = get_store()
     coll = store.collection("bg_imot")
     client = get_client()
@@ -532,9 +558,11 @@ def main():
     try:
         for city_slug, city_name in CITIES:
             logger.info(f"\n{'='*60}")
-            logger.info(f"Scraping {city_name} ({city_slug})")
+            logger.info(f"Scraping {city_name} ({city_slug}) [{args.listing_type}]")
             logger.info(f"{'='*60}")
-            scraped, new, errors = scrape_city(client, coll, city_slug, city_name)
+            scraped, new, errors = scrape_city(
+                client, coll, city_slug, city_name, listing_type=args.listing_type,
+            )
             total_scraped += scraped
             total_new += new
             total_errors += errors

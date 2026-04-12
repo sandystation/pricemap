@@ -122,8 +122,9 @@ def geocode_bg_imot(dry_run: bool = False):
     logger.info(f"Already cached: {len(pairs) - len(to_geocode)}")
     logger.info(f"Need to geocode: {len(to_geocode)}")
 
-    if to_geocode and not dry_run:
-        logger.info(f"Estimated time: {len(to_geocode) * NOMINATIM_DELAY / 60:.0f} minutes")
+    if to_geocode:
+        if not dry_run:
+            logger.info(f"Estimated time: {len(to_geocode) * NOMINATIM_DELAY / 60:.0f} minutes")
 
         geocoded = 0
         failed = 0

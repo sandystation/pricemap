@@ -407,6 +407,10 @@ def load_training_data(
                 skipped["non_monthly"] += 1
                 continue
 
+        # VAT normalization: Bulgarian listings marked "без ДДС" need 20% added
+        if cur.get("vat_status") == "excluded":
+            price = price * 1.20
+
         # Price outlier check
         if price < config["min_price"] or price > config["max_price"]:
             skipped["price_outlier"] += 1
@@ -551,9 +555,15 @@ def build_dataframe(
             llm = extract_llm_features(cur)
             llm_model = cur.get("llm_model")
 
-        # Use refined coordinates if available (from geocoded location_reference)
+        # Use best available coordinates:
+        # 1. Precise map coords from imot.bg (map_lat/map_lon) -- street-level
+        # 2. Geocoded location_reference from LLM enrichment
+        # 3. Neighborhood-level geocoding (lat/lon) -- fallback
         lat, lon = cur["lat"], cur["lon"]
-        if coord_overrides and doc_id in coord_overrides:
+        if cur.get("map_lat"):
+            lat, lon = cur["map_lat"], cur["map_lon"]
+            n_refined += 1
+        elif coord_overrides and doc_id in coord_overrides:
             lat, lon = coord_overrides[doc_id]
             n_refined += 1
 

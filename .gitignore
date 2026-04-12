@@ -68,3 +68,4 @@ data/collections/
 data/images/
 data/*.db
 data_backup_2026-04-06/
+data/html_cache/*
