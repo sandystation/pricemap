@@ -113,6 +113,12 @@ AMENITY_KEYWORDS = {
     "has_terrace": ["Terrace", "Roof Terrace"],
     "has_pool": ["Pool", "Communal Pool", "Pool Deck"],
     "has_ceramic_floor": ["Ceramic Floor"],
+    "has_backyard": ["Back Yard"],
+    "has_yard": ["Yard", "Court Yard"],
+    "has_marble_floor": ["Marble Floor"],
+    "has_walk_in_wardrobe": ["Walk in Wardrobe"],
+    "has_alarm": ["Alarm System"],
+    "has_video_intercom": ["Video Intercom", "Video Hall Porter"],
 }
 
 # Feature columns in the final matrix (excluding target-encoded categoricals
@@ -189,7 +195,11 @@ def compute_distances(lat: float, lon: float) -> dict:
 
     return {"dist_coast_km": round(coast_km, 3), "dist_cbd_km": round(cbd_km, 3)}
 
-AMENITY_FEATURES = list(AMENITY_KEYWORDS.keys()) + ["is_premium_zone", "is_gozo", "is_resort"]
+AMENITY_FEATURES = list(AMENITY_KEYWORDS.keys()) + [
+    "is_premium_zone", "is_gozo", "is_resort",
+    "is_near_beach", "is_seafront", "is_sea_view", "is_quiet_road",
+    "is_city_center", "is_countryside",
+]
 
 CATEGORICAL_FEATURES = ["locality_enc", "province_enc"]
 
@@ -278,7 +288,7 @@ def _get_population(cur: dict) -> float | None:
 
 EXTRA_NUMERIC_FEATURES = ["struct_floor", "struct_total_floors", "listing_age_days", "listing_year",
                           "city_population", "city_population_log", "area_sqm_log",
-                          "rental_density_2km"]
+                          "rental_density_2km", "listing_score"]
 EXTRA_CATEGORICAL_FEATURES = {"construction_type": CONSTRUCTION_TYPE_MAP}
 
 # ---------------------------------------------------------------------------
@@ -469,7 +479,8 @@ def load_training_data(
 def extract_amenities(cur: dict) -> dict:
     """Extract boolean amenity features from a doc.
 
-    Works for both RE/MAX (has `features` list) and MaltaPark (has `has_*` fields).
+    Works for RE/MAX (has `features` list), MaltaPark (has `has_*` fields),
+    and bg_imot (has `has_*` fields from HTML scraper).
     """
     features_list = cur.get("features")
 
@@ -480,18 +491,21 @@ def extract_amenities(cur: dict) -> dict:
             key: 1.0 if any(kw in feat_set for kw in keywords) else 0.0
             for key, keywords in AMENITY_KEYWORDS.items()
         }
-    elif cur.get("source") == "mt_maltapark" or any(cur.get(f"has_{k}") is not None for k in ("parking", "pool", "garden")):
+    elif cur.get("source") == "mt_maltapark":
         # MaltaPark: map structured boolean fields
-        result = {
-            "has_balcony": float(cur.get("has_balcony", 0) or 0),
-            "has_ac": np.nan,  # not available in MaltaPark
-            "has_ensuite": np.nan,
-            "has_lift": float(cur.get("has_elevator", 0) or 0),
-            "has_double_glazed": np.nan,
-            "has_terrace": np.nan,
-            "has_pool": float(cur.get("has_pool", 0) or 0),
-            "has_ceramic_floor": np.nan,
-        }
+        result = {k: np.nan for k in AMENITY_KEYWORDS}
+        result["has_balcony"] = float(cur.get("has_balcony", 0) or 0)
+        result["has_lift"] = float(cur.get("has_elevator", 0) or 0)
+        result["has_pool"] = float(cur.get("has_pool", 0) or 0)
+    elif any(cur.get(k) is not None for k in ("has_ac", "has_elevator", "has_furnishing", "has_access_control")):
+        # bg_imot: has_* fields from HTML scraper
+        result = {k: np.nan for k in AMENITY_KEYWORDS}
+        result["has_balcony"] = float(cur.get("has_balcony", 0) or 0)
+        result["has_ac"] = float(cur.get("has_ac", 0) or 0)
+        result["has_lift"] = float(cur.get("has_elevator", 0) or 0)
+        result["has_alarm"] = float(cur.get("has_access_control", 0) or 0)
+        result["has_video_intercom"] = float(cur.get("has_cctv", 0) or 0)
+        result["has_yard"] = float(cur.get("has_garden", 0) or 0)
     else:
         result = {k: np.nan for k in AMENITY_KEYWORDS}
 
@@ -637,6 +651,25 @@ def build_dataframe(
         # Resort: seasonal rental market (Bulgarian coastal resorts)
         is_resort = 1.0 if any(kw in locality for kw in _RESORT_KEYWORDS) else 0.0
 
+        # RE/MAX LocationTypes (from detail API)
+        raw_detail = cur.get("raw_data_detail", {})
+        loc_types = set()
+        if isinstance(raw_detail, dict):
+            for lt in (raw_detail.get("LocationTypes") or []):
+                name = lt.get("Name", "") if isinstance(lt, dict) else ""
+                if name:
+                    loc_types.add(name)
+        is_near_beach = 1.0 if "Near Beach" in loc_types else 0.0
+        is_seafront = 1.0 if "Seafront" in loc_types else 0.0
+        is_sea_view = 1.0 if "Sea View" in loc_types else 0.0
+        is_quiet_road = 1.0 if "On Quiet Road" in loc_types else 0.0
+        is_city_center = 1.0 if "Village Core (City Center)" in loc_types else 0.0
+        is_countryside = 1.0 if "Countryside" in loc_types or "Rural" in loc_types else 0.0
+
+        # RE/MAX Score (listing quality 0-100)
+        score = raw_detail.get("Score") if isinstance(raw_detail, dict) else None
+        listing_score = float(score) if score and score > 0 else np.nan
+
         # Use LLM-corrected area if available (catches attic/common parts inflation)
         area = cur.get("_clean_area", np.nan)
         if llm_run and doc_id in llm_run:
@@ -655,11 +688,18 @@ def build_dataframe(
             "lat": lat,
             "lon": lon,
             "area_sqm": area,
-            "area_sqm_log": math.log(area) if not (isinstance(area, float) and np.isnan(area)) and area > 0 else np.nan,
+            "area_sqm_log": math.log(area) if area is not None and not (isinstance(area, float) and np.isnan(area)) and area > 0 else np.nan,
             "is_premium_zone": is_premium,
             "is_gozo": is_gozo,
             "is_resort": is_resort,
+            "is_near_beach": is_near_beach,
+            "is_seafront": is_seafront,
+            "is_sea_view": is_sea_view,
+            "is_quiet_road": is_quiet_road,
+            "is_city_center": is_city_center,
+            "is_countryside": is_countryside,
             "rental_density_2km": rental_density,
+            "listing_score": listing_score,
             "struct_floor": struct_floor,
             "struct_total_floors": struct_total_floors,
             "construction_type": construction_type,
