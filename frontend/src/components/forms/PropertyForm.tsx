@@ -107,7 +107,12 @@ export function PropertyForm({
       onSubmit={handleSubmit(onSubmit)}
       className="space-y-6 rounded-xl border border-[var(--color-border)] p-6"
     >
-      <h3 className="text-lg font-semibold">Property Details</h3>
+      <div>
+        <h3 className="text-lg font-semibold">Property Details</h3>
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+          Enter the facts you would use for a first-pass comparable analysis.
+        </p>
+      </div>
 
       {/* Address */}
       <div>
@@ -241,7 +246,7 @@ export function PropertyForm({
         disabled={loading}
         className="w-full rounded-lg bg-[var(--color-primary)] py-3 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
       >
-        {loading ? "Estimating..." : "Get Price Estimate"}
+        {loading ? "Analyzing..." : "Run Comparable Analysis"}
       </button>
     </form>
   );

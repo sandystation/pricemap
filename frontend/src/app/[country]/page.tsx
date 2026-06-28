@@ -38,7 +38,7 @@ export default function CountryPage() {
               href={`/${countryKey}/valuation`}
               className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-dark)]"
             >
-              Get Valuation
+              Run Analysis
             </Link>
           </nav>
         </div>
@@ -49,7 +49,7 @@ export default function CountryPage() {
           <div>
             <h2 className="text-3xl font-bold">{config.name} Price Map</h2>
             <p className="mt-1 text-[var(--color-text-secondary)]">
-              Interactive property price heatmap
+              Listing-data market context and comparable-property analysis
             </p>
           </div>
         </div>
@@ -67,8 +67,16 @@ export default function CountryPage() {
             href={`/${countryKey}/valuation`}
             className="inline-block rounded-lg bg-[var(--color-primary)] px-8 py-3 text-lg font-medium text-white transition-colors hover:bg-[var(--color-primary-dark)]"
           >
-            Estimate a Property Value
+            Analyze a Property
           </Link>
+          {countryKey === "mt" && (
+            <Link
+              href="/mt/professional-beta"
+              className="ml-3 inline-block rounded-lg border border-[var(--color-border)] px-8 py-3 text-lg font-medium transition-colors hover:border-[var(--color-primary)]"
+            >
+              Professional Beta
+            </Link>
+          )}
         </div>
       </div>
     </main>

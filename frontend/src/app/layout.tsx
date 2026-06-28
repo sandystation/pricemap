@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PriceMap - Real Estate Valuation",
+  title: "PriceMap - Property Analysis",
   description:
-    "Instant property price estimates for Malta, Bulgaria, Cyprus, and Croatia",
+    "Comparable-property analysis and valuation support for underserved EU markets",
 };
 
 export default function RootLayout({

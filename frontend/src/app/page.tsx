@@ -5,8 +5,8 @@ const COUNTRIES = [
     code: "mt",
     name: "Malta",
     flag: "MT",
-    description: "Verified transaction data from Property Price Registry",
-    status: "Active",
+    description: "Professional beta using local listing data and comparable analysis",
+    status: "Beta",
   },
   {
     code: "bg",
@@ -56,8 +56,8 @@ export default function Home() {
         </h2>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--color-text-secondary)]">
           Get instant, data-driven property valuations for markets where
-          automated tools don&apos;t exist. Powered by transaction data, listing
-          analysis, and machine learning.
+          automated tools don&apos;t exist. Powered by local listing data,
+          comparable analysis, and machine learning.
         </p>
       </section>
 
@@ -68,7 +68,7 @@ export default function Home() {
         </h3>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {COUNTRIES.map((country) => {
-            const isActive = country.status === "Active";
+            const isActive = country.status === "Active" || country.status === "Beta";
             const CardWrapper = isActive ? Link : "div";
             return (
               <CardWrapper

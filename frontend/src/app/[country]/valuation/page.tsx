@@ -46,9 +46,16 @@ export default function ValuationPage() {
       </header>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <h2 className="mb-8 text-3xl font-bold">
-          Property Valuation - {config.name}
-        </h2>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold">
+            Property Analysis - {config.name}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm text-[var(--color-text-secondary)]">
+            First-pass valuation support based on available listing data,
+            comparable properties, location, and property features. Not a formal
+            Perit valuation, bank valuation, or legal opinion.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Left: Form */}

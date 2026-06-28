@@ -30,7 +30,7 @@ export function PriceCard({ result }: PriceCardProps) {
     <div className="rounded-xl border border-[var(--color-border)] p-6">
       <div className="text-center">
         <p className="text-sm text-[var(--color-text-secondary)]">
-          Estimated Value
+          Estimated Market Range
         </p>
         <p className="mt-1 text-4xl font-bold text-[var(--color-primary)]">
           {formatEur(result.estimate_eur)}
@@ -85,6 +85,10 @@ export function PriceCard({ result }: PriceCardProps) {
         <span>Method: {result.method}</span>
         <span>Model: {result.model_version}</span>
       </div>
+      <p className="mt-4 text-xs text-[var(--color-text-secondary)]">
+        Support analysis only. This is not a formal valuation or a substitute
+        for professional judgment.
+      </p>
     </div>
   );
 }
