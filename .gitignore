@@ -37,7 +37,6 @@ Thumbs.db
 docker-compose.override.yml
 
 # ML artifacts
-ml/artifacts/*.joblib
 ml/artifacts/*.pkl
 backend/src/ml/models/*.joblib
 backend/src/ml/models/*.pkl

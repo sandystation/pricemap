@@ -1,0 +1,15 @@
+{
+  "provider": "google",
+  "model": "gemini-3.1-flash-lite-preview",
+  "mode": "text-only",
+  "collection": "mt_remax",
+  "started_at": "2026-06-28T22:52:45.035723+00:00",
+  "completed_at": "2026-06-28T23:32:35.410066+00:00",
+  "processed": 31964,
+  "errors": 0,
+  "total_submitted": 31964,
+  "parallel": 20,
+  "wrote_to_docstore": true,
+  "run_id": "mt_remax_v1_reproduce",
+  "doc_count": 31964
+}
