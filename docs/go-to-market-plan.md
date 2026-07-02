@@ -8,7 +8,7 @@
 
 PriceMap is an ML-powered automated property valuation (AVM) tool targeting the four EU countries with no existing automated valuation solutions: **Malta, Bulgaria, Cyprus, and Croatia**. These markets represent ~367K property transactions/year and EUR 20B+ in transaction value, yet rely entirely on manual valuations costing EUR 250-700+ each.
 
-PriceMap already has working ML models for Malta (12.1% MAPE -- sales, 18.2% rents) and Bulgaria (12.1% sales, 13.5% rents), trained on 86K+ scraped listings with LLM-enriched features. The production app (Next.js + FastAPI + PostGIS) is scaffolded and needs 2-4 weeks to connect to the existing data pipeline.
+PriceMap already has working ML models for Malta (11.8% MAPE -- sales, 16.2% rents) and Bulgaria (12.1% sales, 13.5% rents), trained on 86K+ scraped listings with LLM-enriched features. The production app (Next.js + FastAPI + PostGIS) is scaffolded and needs 2-4 weeks to connect to the existing data pipeline.
 
 **The opportunity**: First-mover advantage in EUR 20B+ of annual real estate transactions with zero credible AVM competition. EU banking regulations (EBA/CRR3) now actively encourage AVM adoption, but banks in these markets have no provider to work with.
 
@@ -231,7 +231,7 @@ These are conservative. A single bank contract for portfolio revaluation could a
 - Highest average transaction value (EUR 278K) = highest willingness to pay
 - 15% foreign buyers who can't easily commission local valuers
 - Strong English-language market (no localization needed)
-- Data already mature: 32K+ RE/MAX listings, 12.1% MAPE model
+- Data already mature: 32K+ RE/MAX listings, 11.8% MAPE model
 
 **Launch checklist:**
 1. Ship production app with free heatmap + paid reports
@@ -552,8 +552,8 @@ Yes: "12% accuracy" (concrete, verifiable)
 
 | Model | MAPE | Context |
 |-------|------|---------|
-| **PriceMap Malta Sales** | **12.1%** | Asking prices, 2.3K samples, spatial CV |
-| **PriceMap Malta Rents** | **18.2%** | Asking prices, 9.4K samples, spatial CV |
+| **PriceMap Malta Sales** | **11.8%** | Asking prices, 2.2K samples, spatial CV |
+| **PriceMap Malta Rents** | **16.2%** | Asking prices, 9.5K samples, spatial CV |
 | **PriceMap Bulgaria Sales** | **12.1%** | Asking prices, 7.6K samples, spatial CV |
 | **PriceMap Bulgaria Rents** | **13.5%** | Asking prices, 9.2K samples, spatial CV |
 | Zillow Zestimate (US) | 7.3% | Transaction prices, millions of samples |
@@ -561,7 +561,7 @@ Yes: "12% accuracy" (concrete, verifiable)
 | Academic AVMs (typical) | 10-25% | Asking prices, limited features |
 | GPBoost German apartments | 8-12% | 1.5M listings |
 
-**Our models are competitive with academic benchmarks and approaching professional AVM quality**, especially considering we use asking prices (not transactions) and have relatively small datasets. The 12.1% MAPE on Malta sales means that for a EUR 300K property, our estimate is typically within EUR 36K of the asking price -- useful for any buyer, seller, or agent trying to gauge fair value.
+**Our models are competitive with academic benchmarks and approaching professional AVM quality**, especially considering we use asking prices (not transactions) and have relatively small datasets. The 11.8% MAPE on Malta sales means that for a EUR 300K property, our estimate is typically within EUR 35K of the asking price -- useful for any buyer, seller, or agent trying to gauge fair value.
 
 ### Accuracy Improvement Path
 
