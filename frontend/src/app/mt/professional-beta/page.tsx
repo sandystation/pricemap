@@ -1,26 +1,62 @@
 import Link from "next/link";
 import styles from "./professional-beta.module.css";
 
+type BenefitIconName = "comps" | "price" | "caveats";
+
 const BENEFITS = [
   {
-    title: "Save comp research time",
-    detail: "Start with relevant Malta listing comparables instead of building the set from scratch.",
+    icon: "comps",
+    title: "Find comps",
+    detail: "Nearby listings",
   },
   {
-    title: "Challenge asking prices",
-    detail: "Use range, EUR/sqm, and nearby evidence to spot cases that need a closer look.",
+    icon: "price",
+    title: "Check price",
+    detail: "Range + EUR/sqm",
   },
   {
-    title: "Shape it around Malta",
-    detail: "Tell us which comps are wrong and what local context would make the tool useful.",
+    icon: "caveats",
+    title: "Flag caveats",
+    detail: "Weak matches",
   },
-];
+] satisfies Array<{
+  icon: BenefitIconName;
+  title: string;
+  detail: string;
+}>;
 
 const LIMITATION_BADGES = [
   "Not formal",
-  "Not PPR-backed",
   "Not bank-grade",
 ];
+
+function BenefitIcon({ name }: { name: BenefitIconName }) {
+  if (name === "comps") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 21s6-5.1 6-11a6 6 0 0 0-12 0c0 5.9 6 11 6 11Z" />
+        <circle cx="12" cy="10" r="2.2" />
+      </svg>
+    );
+  }
+
+  if (name === "price") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 17.5 9.4 12l3.2 3.2L20 7.8" />
+        <path d="M20 13V7.8h-5.2" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 4 21 19H3L12 4Z" />
+      <path d="M12 9v4.5" />
+      <path d="M12 16.8h.01" />
+    </svg>
+  );
+}
 
 export default function MaltaProfessionalBetaPage() {
   return (
@@ -48,17 +84,17 @@ export default function MaltaProfessionalBetaPage() {
               <span className={styles.statusDot} />
               Malta professional beta
             </div>
-            <h1>Comparable evidence for Malta property professionals</h1>
+            <h1>Faster Malta property comps</h1>
             <p>
-              Sanity-check asking prices, find local comparables, and inspect
-              valuation-support evidence from Malta listing data.
+              Paste a listing. Get a price range, nearby comps, and caveats for
+              review.
             </p>
             <div className={styles.actions}>
               <Link href="/mt/valuation" className={styles.primaryAction}>
-                Run Sample Analysis
+                Try One Case
               </Link>
               <Link href="/mt" className={styles.secondaryAction}>
-                View Malta Market Map
+                View Map
               </Link>
             </div>
           </div>
@@ -71,34 +107,26 @@ export default function MaltaProfessionalBetaPage() {
             </div>
             <div className={styles.reportHeader}>
               <div>
-                <p>Illustrative output structure</p>
-                <h2>Evidence pack preview</h2>
+                <p>Live preview</p>
+                <h2>Comp check</h2>
               </div>
               <span className={styles.previewBadge}>Beta</span>
             </div>
 
-            <div className={styles.subjectGrid}>
-              <div>
-                <span>Subject</span>
-                <strong>Sliema apartment</strong>
-              </div>
-              <div>
-                <span>Inputs</span>
-                <strong>112 sqm, 3 bed</strong>
-              </div>
-              <div>
-                <span>Use</span>
-                <strong>Review only</strong>
-              </div>
+            <div className={styles.summaryPills}>
+              <span>Sliema apartment</span>
+              <span>112 sqm</span>
+              <span>Review only</span>
             </div>
 
             <div className={styles.rangePanel}>
               <div>
-                <span>Indicative listing-data range</span>
+                <span>Range</span>
                 <strong>EUR 510k-590k</strong>
               </div>
               <div className={styles.confidence}>
-                <span>Moderate confidence</span>
+                <span>Confidence</span>
+                <strong>Moderate</strong>
                 <div>
                   <i />
                   <i />
@@ -114,23 +142,10 @@ export default function MaltaProfessionalBetaPage() {
               <span className={styles.pinThree}>Comp</span>
             </div>
 
-            <div className={styles.compTable}>
-              <div className={styles.compHeader}>
-                <span>Comparable</span>
-                <span>EUR/sqm</span>
-                <span>Distance</span>
-              </div>
-              {[
-                ["Sliema, 3 bed", "5,180", "420 m"],
-                ["Gzira, 2 bed", "4,760", "1.1 km"],
-                ["St Julian's, 3 bed", "5,420", "1.5 km"],
-              ].map(([name, price, distance]) => (
-                <div key={name} className={styles.compRow}>
-                  <span>{name}</span>
-                  <span>{price}</span>
-                  <span>{distance}</span>
-                </div>
-              ))}
+            <div className={styles.compChips}>
+              <span>8 comps</span>
+              <span>420 m nearest</span>
+              <span>EUR/sqm view</span>
             </div>
           </aside>
         </div>
@@ -138,32 +153,37 @@ export default function MaltaProfessionalBetaPage() {
 
       <section className={styles.lowerSection}>
         <div className={styles.benefitIntro}>
-          <p className={styles.kicker}>Why join the beta</p>
-          <h2>Less searching. Better first-pass judgment.</h2>
+          <p className={styles.kicker}>Why join</p>
+          <h2>Know the price faster.</h2>
         </div>
 
         <div className={styles.benefitGrid}>
           {BENEFITS.map((item) => (
             <article key={item.title} className={styles.benefitCard}>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
+              <div className={styles.benefitMain}>
+                <span className={styles.benefitIcon}>
+                  <BenefitIcon name={item.icon} />
+                </span>
+                <h3>{item.title}</h3>
+              </div>
+              <span className={styles.benefitTag}>{item.detail}</span>
             </article>
           ))}
         </div>
 
         <div className={styles.finalCta}>
           <div>
-            <p>Private Malta beta</p>
-            <h2>Send one real case. See if PriceMap saves you time.</h2>
-            <span>32k+ RE/MAX listings, 4k+ MaltaPark listings, 5 beta seats.</span>
+            <p>Private beta</p>
+            <h2>Try one real case.</h2>
+            <span>5 Malta professionals. Listing-data support only.</span>
           </div>
           <Link href="/mt/valuation" className={styles.primaryAction}>
-            Run Sample Analysis
+            Try One Case
           </Link>
         </div>
 
         <div className={styles.disclaimerLine}>
-          <span>Listing-data support only.</span>
+          <span>For review support.</span>
           {LIMITATION_BADGES.map((badge) => (
             <strong key={badge}>{badge}</strong>
           ))}
