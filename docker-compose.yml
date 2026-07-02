@@ -34,13 +34,18 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    env_file:
+      - ./scripts/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://pricemap:${POSTGRES_PASSWORD:-pricemap_dev}@postgres:5432/pricemap
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: development
+      MODEL_ARTIFACTS_DIR: /app/ml_artifacts
     volumes:
       - ./backend/src:/app/src
       - ./backend/alembic:/app/alembic
+      - ./ml/artifacts:/app/ml_artifacts
+      - ./data/osm_cache:/app/data/osm_cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -67,13 +72,17 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+      - ./scripts/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://pricemap:${POSTGRES_PASSWORD:-pricemap_dev}@postgres:5432/pricemap
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: development
+      MODEL_ARTIFACTS_DIR: /app/ml_artifacts
     volumes:
       - ./backend/src:/app/src
       - ./ml/artifacts:/app/ml_artifacts
+      - ./data/osm_cache:/app/data/osm_cache
     depends_on:
       postgres:
         condition: service_healthy

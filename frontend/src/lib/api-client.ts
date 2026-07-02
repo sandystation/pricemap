@@ -1,6 +1,8 @@
 import type { FeatureCollection } from "geojson";
 
 import type {
+  EnrichedValuationJobResponse,
+  EnrichedValuationStatusResponse,
   GeocodeResult,
   CountryStats,
   ValuationRequest,
@@ -33,6 +35,21 @@ export const api = {
         method: "POST",
         body: JSON.stringify(request),
       });
+    },
+    submitEnriched(formData: FormData): Promise<EnrichedValuationJobResponse> {
+      return fetch(`${API_BASE}/api/v1/valuations/enriched`, {
+        method: "POST",
+        body: formData,
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({ detail: res.statusText }));
+          throw new Error(error.detail || `API error: ${res.status}`);
+        }
+        return res.json();
+      });
+    },
+    getEnriched(jobId: string): Promise<EnrichedValuationStatusResponse> {
+      return fetchApi(`/api/v1/valuations/enriched/${jobId}`);
     },
   },
 

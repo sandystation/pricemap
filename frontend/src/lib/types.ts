@@ -20,6 +20,24 @@ export interface ValuationRequest {
   has_balcony?: boolean;
 }
 
+export interface EnrichedValuationJobResponse {
+  job_id: string;
+  status: string;
+}
+
+export interface EnrichedValuationStatusResponse {
+  job_id: string;
+  status: "queued" | "running" | "complete" | "failed";
+  message?: string | null;
+  result?: ValuationResponse | null;
+  lat?: number | null;
+  lon?: number | null;
+  enriched_features?: Record<string, unknown> | null;
+  missing_features: string[];
+  model_version?: string | null;
+  error?: string | null;
+}
+
 export interface ComparableProperty {
   id: number;
   address: string | null;
