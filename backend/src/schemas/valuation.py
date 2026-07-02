@@ -59,3 +59,25 @@ class ValuationResponse(BaseModel):
     model_version: str
     data_freshness: str | None
     method: str  # "model" or "comparables"
+
+
+class EnrichedValuationJobResponse(BaseModel):
+    """Response when an enriched valuation job is queued."""
+
+    job_id: str
+    status: str
+
+
+class EnrichedValuationStatusResponse(BaseModel):
+    """Current status/result for an enriched valuation job."""
+
+    job_id: str
+    status: str
+    message: str | None = None
+    result: ValuationResponse | None = None
+    lat: float | None = None
+    lon: float | None = None
+    enriched_features: dict[str, object] | None = None
+    missing_features: list[str] = []
+    model_version: str | None = None
+    error: str | None = None

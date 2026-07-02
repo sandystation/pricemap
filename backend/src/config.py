@@ -18,6 +18,20 @@ class Settings(BaseSettings):
     default_confidence_threshold: float = 30.0
     comparable_radius_km: float = 2.0
     comparable_max_count: int = 10
+    model_artifacts_dir: str = "/app/ml_artifacts"
+    enriched_valuation_ttl_seconds: int = 86400
+    valuation_upload_dir: str = "/tmp/pricemap-valuation-uploads"
+    valuation_max_upload_images: int = 10
+    valuation_max_upload_bytes: int = 8 * 1024 * 1024
+    valuation_max_upload_total_bytes: int = 40 * 1024 * 1024
+    valuation_description_max_chars: int = 6000
+    valuation_rate_limit_hour: int = 5
+    valuation_rate_limit_day: int = 20
+    valuation_max_active_jobs: int = 25
+
+    # Runtime LLM enrichment
+    llm_provider: str = "google"
+    llm_model: str = "gemini-3.1-flash-lite-preview"
 
     # Asking-to-transaction adjustment defaults
     adjustment_factors: dict[str, float] = {
@@ -27,7 +41,11 @@ class Settings(BaseSettings):
         "HR": 0.93,  # Croatia: Phase 2
     }
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
 
 
 settings = Settings()
