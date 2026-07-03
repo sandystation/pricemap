@@ -491,3 +491,27 @@ did NOT change the production model.
 from latitude (>36.0). Validated on real data: nearest-centroid top-1 locality recovery
 100% (in-sample; proves geographic separability), is_gozo-by-latitude 100.00%. No retrain
 needed — it makes serve inputs match what v20260703 already learned.
+
+### Second-wave levers explored (measured, not adopted) - 2026-07-03
+
+Measured with `--eval-only` on the serve-consistent feature set. Results (MAPE / R2 / within10):
+
+| Config | Rent | Sale |
+|--------|------|------|
+| baseline (v20260703) | 18.2 / 0.662 / 36.4 | 12.2 / 0.776 / 59.2 |
+| locality target-encoding | 18.2 / 0.660 / 36.4 | 12.0 / 0.771 / 60.2 |
+| winsorize price [P1,P99] | 18.0 / 0.680 / 36.2 | 11.9 / 0.809 / 60.0 |
+| te + winsorize | 18.0 / 0.681 / 35.9 | 11.8 / 0.799 / 60.0 |
+
+- **condition/year_built (B4): rejected** — 0% coverage in RE/MAX training data, nothing to learn.
+- **Locality target-encoding (leakage-safe per-fold): inert for rent, -0.2pp for sale.** Not worth the
+  serve-side plumbing (a target-encoded model can't be served without a locality->mean map lookup).
+- **Ensemble-weight sweep: 0.7/0.3 is already near-optimal** for the production label-encoded model
+  (sale baseline optimum 0.75); the 0.25 seen under target-encoding is config-dependent CV noise.
+- **Winsorizing the price tail is the only genuine lever** (sale MAPE -0.3pp / R2 +0.033; rent -0.2pp /
+  R2 +0.017). Trade-off: it caps the top ~1% of prices, under-valuing genuine high-end (luxury Sliema/
+  St Julian's) properties — a real downside for a professional tool. Not adopted by default; available
+  via `train_valuation.py --winsorize` if the aggregate-accuracy/high-end trade-off is acceptable.
+
+Conclusion: the big wins already landed (serve-consistent honest model + serve-side locality/Gozo fix).
+Second-wave feature/loss tuning offers only marginal gains; production model kept at v20260703.
