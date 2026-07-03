@@ -1,0 +1,23 @@
+# Caddy reverse proxy for the PriceMap API. Auto-provisions Let's Encrypt TLS for
+# $API_DOMAIN (set in .env). Replaces the dev nginx config for production.
+{$API_DOMAIN} {
+	# Allow the 40MB image-upload batches (nginx used client_max_body_size 45m).
+	request_body {
+		max_size 45MB
+	}
+
+	# Security headers (Caddy already serves HTTPS + HSTS-eligible).
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	reverse_proxy backend:8000 {
+		# Caddy is the edge, so the immediate peer IS the real client. Expose it
+		# as X-Real-IP, which the backend's _client_identifier trusts first for
+		# rate limiting (spoof-resistant; the backend port is never published).
+		header_up X-Real-IP {remote_host}
+	}
+}

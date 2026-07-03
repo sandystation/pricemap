@@ -1,0 +1,40 @@
+# Production backend image. Build context is the REPO ROOT (not backend/) so the
+# model artifacts and OSM cache can be baked in for a reproducible, version-pinned
+# image (no bind mounts at serve time). Build with:
+#   docker build -f backend/Dockerfile.prod -t pricemap-backend .
+# or via docker-compose.prod.yml (context: .).
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# libgomp1 is the OpenMP runtime LightGBM/XGBoost need at import (python:3.12-slim
+# doesn't ship it). The deps install from prebuilt wheels, so no compiler/dev libs.
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python deps first (layer cache).
+COPY backend/pyproject.toml .
+RUN pip install --no-cache-dir -e .
+
+# App source.
+COPY backend/ .
+
+# Bake serving data into the image (kept OUT of the repo-root build via .dockerignore
+# for everything else). MODEL_ARTIFACTS_DIR=/app/ml_artifacts and the OSM cache path
+# /app/data/osm_cache match the serve-time loaders.
+COPY ml/artifacts/ /app/ml_artifacts/
+COPY data/osm_cache/ /app/data/osm_cache/
+
+# Run as a non-root user. /uploads is created owned by that user so the shared
+# named volume inherits the ownership (Docker seeds an empty named volume from
+# the image path), letting the worker write/delete uploaded images without root.
+RUN useradd -u 10001 -m app \
+    && mkdir -p /uploads \
+    && chown -R app:app /app /uploads
+USER app
+
+EXPOSE 8000
+
+# Trust forwarded headers only from the compose network (Caddy is the sole hop).
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", \
+     "--proxy-headers", "--forwarded-allow-ips", "*"]

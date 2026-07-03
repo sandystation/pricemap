@@ -1,0 +1,33 @@
+# Repo-root build context for backend/Dockerfile.prod. Keep only what the prod
+# backend image needs (backend/, ml/artifacts/, data/osm_cache/); exclude the
+# rest so the context stays small. NOTE: do NOT ignore ml/artifacts or
+# data/osm_cache — they are baked into the image.
+.git
+.gitignore
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+
+# Frontend (deployed separately on Vercel)
+frontend
+
+# Large / gitignored data not needed at serve time
+data/collections
+data/images
+data/html_cache
+data/*.db
+data_backup_*
+pgdata
+
+# Dev / local
+.venv
+**/.venv
+node_modules
+pipeline
+scripts/.env
+docs
+priznani
+*.zip
+*.md
