@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 
 from src.config import settings
+from src.ml.locality_resolver import is_gozo, resolve_locality
 from src.ml.location_features import compute_location_features
 
 FURNISHING_MAP = {"unknown": 0, "unfurnished": 1, "partly_furnished": 2, "furnished": 3}
@@ -175,7 +176,7 @@ class ArtifactValuationPredictor:
                 "construction_type": np.nan,
                 "is_premium_zone": 0.0,
                 "is_resort": 0.0,
-                "is_gozo": 1.0 if locality and locality.lower().startswith("gozo") else 0.0,
+                "is_gozo": 1.0 if is_gozo(lat) else 0.0,
                 "is_near_beach": _bool_float(enriched.get("sea_proximity")),
                 "is_seafront": 1.0 if enriched.get("view") == "sea" else 0.0,
                 "is_sea_view": 1.0 if enriched.get("view") in {"sea", "harbour"} else 0.0,
@@ -203,8 +204,12 @@ class ArtifactValuationPredictor:
             values[name] = float(mapping.get(raw_value, 0)) if raw_value is not None else np.nan
 
         encoders = loaded["encoders"]
-        if locality and locality in encoders["locality"]:
-            values["locality_enc"] = float(encoders["locality"][locality])
+        # Nominatim returns Maltese endonyms that don't match the anglicized
+        # encoder keys; resolve (with a coordinate fallback) so locality_enc is
+        # not silently NaN for the majority of real requests.
+        resolved_locality = resolve_locality(locality, lat, lon, encoders["locality"].keys())
+        if resolved_locality is not None:
+            values["locality_enc"] = float(encoders["locality"][resolved_locality])
         else:
             missing.append("locality_enc")
         # province_enc is only ever populated at training time; flag it missing
