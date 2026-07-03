@@ -742,9 +742,33 @@ def target_encode(
     return apply_series.map(smooth).fillna(global_mean)
 
 
-def get_feature_names() -> list[str]:
-    """Return the ordered list of feature column names."""
-    return (
+# Features populated during training from scraped/marketplace metadata or the
+# RE/MAX structured "features" list, but NOT available (always NaN) when serving
+# a fresh valuation from the public form. Training on them creates train/serve
+# skew and makes CV metrics optimistic vs real production accuracy. The serve-time
+# feature builder (backend/src/ml/artifact_predictor.py) never populates these.
+SERVE_ABSENT_FEATURES = {
+    # Marketplace / listing-dynamics (leakage-style; unavailable at serve)
+    "listing_age_days", "listing_year", "listing_score",
+    # Derivable but not computed at serve today (dropped; could be re-added serve-side)
+    "city_population", "city_population_log", "rental_density_2km",
+    # Inert on MT (0% coverage) / always missing at serve
+    "construction_type", "province_enc",
+    # RE/MAX structured amenities the public form does not collect
+    "has_ac", "has_ensuite", "has_double_glazed", "has_terrace",
+    "has_ceramic_floor", "has_backyard", "has_marble_floor",
+    "has_walk_in_wardrobe", "has_alarm", "has_video_intercom",
+}
+
+
+def get_feature_names(serve_consistent: bool = False) -> list[str]:
+    """Return the ordered list of feature column names.
+
+    When serve_consistent is True, features that are never available at inference
+    (SERVE_ABSENT_FEATURES) are excluded, so CV metrics reflect real production
+    accuracy and the model spends no capacity on inputs the form never provides.
+    """
+    names = (
         NUMERIC_FEATURES + AMENITY_FEATURES + CATEGORICAL_FEATURES
         + EXTRA_NUMERIC_FEATURES + list(EXTRA_CATEGORICAL_FEATURES.keys())
         + LLM_NUMERIC_FEATURES + LLM_BOOLEAN_FEATURES
@@ -753,6 +777,9 @@ def get_feature_names() -> list[str]:
         + LLM_IMAGE_NUMERIC + list(LLM_IMAGE_ORDINAL.keys())
         + list(LLM_IMAGE_CATEGORICAL.keys())
     )
+    if serve_consistent:
+        names = [n for n in names if n not in SERVE_ABSENT_FEATURES]
+    return names
 
 
 # ===================================================================
@@ -874,12 +901,17 @@ def train_and_evaluate(
     prov_codes = prov_cat.cat.codes.values.astype(float)
 
     # Indices of categorical features in the feature matrix
-    all_cat_names = (
-        ["locality_enc", "province_enc"]
-        + list(EXTRA_CATEGORICAL_FEATURES.keys())
-        + list(LLM_CATEGORICAL_FEATURES.keys())
-        + list(LLM_IMAGE_CATEGORICAL.keys())
-    )
+    # Only categoricals that survived into feature_names (serve-consistent mode
+    # may drop province_enc / construction_type).
+    all_cat_names = [
+        c for c in (
+            ["locality_enc", "province_enc"]
+            + list(EXTRA_CATEGORICAL_FEATURES.keys())
+            + list(LLM_CATEGORICAL_FEATURES.keys())
+            + list(LLM_IMAGE_CATEGORICAL.keys())
+        )
+        if c in feature_names
+    ]
     cat_indices = [feature_names.index(c) for c in all_cat_names]
 
     base_cols = (
@@ -1027,6 +1059,8 @@ def save_artifacts(
         "ensemble_weights": {"lgb": LGBM_WEIGHT, "xgb": XGB_WEIGHT},
         "feature_names": results["feature_names"],
         "feature_importance": results["feature_importance"],
+        "serve_consistent": results.get("serve_consistent", False),
+        "excluded_features": results.get("excluded_features", []),
         "outlier_bounds": config,
         "cv_metrics": results["cv_metrics"],
         "fold_metrics": results["fold_metrics"],
@@ -1129,6 +1163,12 @@ def main():
         "--dry-run", action="store_true",
         help="Show data stats without training",
     )
+    parser.add_argument(
+        "--serve-consistent", action="store_true",
+        help="Exclude features unavailable at inference (marketplace/listing "
+             "metadata, RE/MAX-only amenities, province_enc) so CV metrics "
+             "reflect real production accuracy with no train/serve skew.",
+    )
     args = parser.parse_args()
 
     config_key = (args.property_type, args.listing_type)
@@ -1211,8 +1251,16 @@ def main():
         return
 
     # Train
-    feature_names = get_feature_names()
+    feature_names = get_feature_names(serve_consistent=args.serve_consistent)
+    if args.serve_consistent:
+        logger.info(
+            f"Serve-consistent mode: {len(feature_names)} features "
+            f"(excluded {len(SERVE_ABSENT_FEATURES)} serve-absent features)"
+        )
     results = train_and_evaluate(df, feature_names)
+    results["serve_consistent"] = args.serve_consistent
+    if args.serve_consistent:
+        results["excluded_features"] = sorted(SERVE_ABSENT_FEATURES)
 
     # Add LLM run info to results for metadata tracking
     if llm_run_meta:

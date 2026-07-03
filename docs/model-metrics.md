@@ -417,3 +417,51 @@ Rental geocoding: fixed "Наеми в " prefix stripping for 17,470 rental loca
 | Within 25% | 85.8% | |
 
 Note: Sale model improved slightly with 16% more training data from map_lat fallback. Rent model MAPE increased 0.2pp likely from newly included docs in industrial/suburban areas with less predictable rents. Both models now use full LLM enrichment from 52K docs (vs 9.7K in v1).
+
+---
+
+## Malta (mt_remax) serve-consistent retrain - 2026-07-03
+
+LLM run: `mt_remax_v1_reproduce` (gemini-3.1-flash-lite-preview, text-only, 31,964 enriched)
+Version: `v20260703` (supersedes `v20260628` via latest-glob; v20260628 retained for rollback)
+
+**Why:** the audit found the v20260628 models were trained with features that are
+always `NaN` at serve time (the public form never provides them): `listing_age_days`
+(the #1 feature), `listing_score`, `listing_year`, `city_population(_log)`,
+`rental_density_2km`, `construction_type`, `province_enc`, and 10 RE/MAX-only
+amenity booleans (`has_ac`, `has_ensuite`, ...). This train/serve skew made the
+reported CV MAPE optimistic vs real production accuracy. The serve-consistent
+models exclude those 18 features (98 -> 79) so CV metrics reflect what the form
+actually delivers, trained via `--serve-consistent`.
+
+### Sales (apartment, mt_remax) -- serve-consistent
+
+| Metric | v20260703 (serve-consistent) | v20260628 (inflated CV) |
+|--------|------------------------------|-------------------------|
+| Samples | 2,179 | 2,179 |
+| Features | 79 | 97 |
+| MAPE | **12.2%** (honest) | 11.8% (relied on serve-absent features) |
+| R2 | 0.776 | 0.774 |
+| Within 10% | 59.2% | 61.7% |
+| Within 20% | 81.3% | 82.2% |
+
+### Rents (apartment, mt_remax) -- serve-consistent
+
+| Metric | v20260703 (serve-consistent) | v20260628 (inflated CV) |
+|--------|------------------------------|-------------------------|
+| Samples | 9,470 | 9,470 |
+| Features | 79 | 97 |
+| MAPE | **18.2%** (honest) | 16.2% (relied on serve-absent features) |
+| R2 | 0.662 | 0.704 |
+| Within 10% | 36.4% | 40.6% |
+| Within 20% | 65.1% | 69.8% |
+
+Note: The serve-consistent CV numbers are the honest production estimate -- every
+feature is available at inference. Sale is unchanged in practice (12.2% vs 11.8%),
+confirming the dropped features added little real value. Rent MAPE rises ~2pp on
+paper (16.2% -> 18.2%), but this reflects *removing an illusion*: the audit measured
+the old model's real serve-time rent within-10% at ~37%, essentially identical to
+the new model's honest 36.4% -- production was already at ~this level; the old 16.2%
+just hid it. The new models also carry no `province_enc` confidence penalty at serve.
+Follow-up to recover accuracy honestly: collect the dropped amenities in the form,
+or compute `city_population`/`rental_density_2km` server-side, then re-add them.

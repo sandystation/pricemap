@@ -207,7 +207,10 @@ class ArtifactValuationPredictor:
             values["locality_enc"] = float(encoders["locality"][locality])
         else:
             missing.append("locality_enc")
-        missing.append("province_enc")
+        # province_enc is only ever populated at training time; flag it missing
+        # only for models that actually use it (older, pre-serve-consistent models).
+        if "province_enc" in feature_names:
+            missing.append("province_enc")
 
         for required in [
             "bathrooms",
