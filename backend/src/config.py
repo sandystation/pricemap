@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     # API
     api_v1_prefix: str = "/api/v1"
     cors_origins: list[str] = ["http://localhost:3000"]
+    # Public API host; used for TrustedHost validation in production. Set via the
+    # API_DOMAIN env var (also consumed by Caddy).
+    api_domain: str = "localhost"
     # Number of trusted reverse-proxy hops in front of the app. The real client
     # IP is read this many entries from the RIGHT of X-Forwarded-For (the hop the
     # trusted proxy actually observed), never the client-supplied left-most token.

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from src.core.celery_app import celery_app
-from src.ml.artifact_predictor import ArtifactValuationPredictor
+from src.ml.artifact_predictor import PREDICTOR
 from src.schemas.valuation import ValuationResponse
 from src.services.geocoding_service import GeocodingService
 from src.services.llm_enrichment_service import LLMEnrichmentService
@@ -85,7 +85,7 @@ def process_enriched_valuation(
                 "missing_features": [],
             },
         )
-        prediction = ArtifactValuationPredictor().predict(
+        prediction = PREDICTOR.predict(
             payload=payload,
             enriched=enriched,
             lat=geo.lat,
@@ -136,8 +136,16 @@ def process_enriched_valuation(
         )
         raise
     finally:
+        # Remove the whole per-job upload directory, not just the files, so no
+        # empty {job_id} dirs accumulate on the shared uploads volume.
+        dirs = {Path(p).parent for p in image_paths}
         for path in image_paths:
             try:
                 Path(path).unlink(missing_ok=True)
+            except OSError:
+                pass
+        for d in dirs:
+            try:
+                d.rmdir()
             except OSError:
                 pass

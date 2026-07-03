@@ -1,4 +1,5 @@
 import math
+import re
 from pathlib import Path
 from typing import Any
 
@@ -81,18 +82,26 @@ def _artifact_dir() -> Path:
     return configured
 
 
-def _latest(prefix: str, suffix: str) -> Path:
-    matches = sorted(_artifact_dir().glob(f"{prefix}_{suffix}_v*.joblib"))
-    if not matches:
-        raise FileNotFoundError(f"No {suffix} artifact found for {prefix} in {_artifact_dir()}")
-    return matches[-1]
+def _resolve_version(prefix: str) -> str:
+    """Newest version for which the FULL quartet (lgb, xgb, encoders, meta) exists.
 
-
-def _latest_meta(prefix: str) -> Path:
-    matches = sorted(_artifact_dir().glob(f"{prefix}_meta_v*.json"))
-    if not matches:
-        raise FileNotFoundError(f"No metadata artifact found for {prefix} in {_artifact_dir()}")
-    return matches[-1]
+    Selecting model + metadata by one coherent version prevents shipping a model
+    paired with a different version's metadata (e.g. after a partial rollback that
+    leaves a stale meta_v*.json behind).
+    """
+    d = _artifact_dir()
+    suffixes = {"lgb": "joblib", "xgb": "joblib", "encoders": "joblib", "meta": "json"}
+    have: dict[str, set[str]] = {}
+    for suffix, ext in suffixes.items():
+        pat = re.compile(rf"^{re.escape(prefix)}_{suffix}_v(.+)\.{ext}$")
+        have[suffix] = {
+            m.group(1) for p in d.glob(f"{prefix}_{suffix}_v*.{ext}")
+            if (m := pat.match(p.name))
+        }
+    complete = have["lgb"] & have["xgb"] & have["encoders"] & have["meta"]
+    if not complete:
+        raise FileNotFoundError(f"No complete artifact quartet for {prefix} in {d}")
+    return sorted(complete)[-1]
 
 
 def _as_float(value: Any) -> float:
@@ -124,14 +133,15 @@ class ArtifactValuationPredictor:
         prefix = f"mt_apartment_{listing_type}"
         import json
 
-        meta_path = _latest_meta(prefix)
-        meta = json.loads(meta_path.read_text())
+        d = _artifact_dir()
+        version = _resolve_version(prefix)
+        meta = json.loads((d / f"{prefix}_meta_v{version}.json").read_text())
         loaded = {
-            "lgb": joblib.load(_latest(prefix, "lgb")),
-            "xgb": joblib.load(_latest(prefix, "xgb")),
-            "encoders": joblib.load(_latest(prefix, "encoders")),
+            "lgb": joblib.load(d / f"{prefix}_lgb_v{version}.joblib"),
+            "xgb": joblib.load(d / f"{prefix}_xgb_v{version}.joblib"),
+            "encoders": joblib.load(d / f"{prefix}_encoders_v{version}.joblib"),
             "meta": meta,
-            "version": meta.get("version") or meta_path.stem,
+            "version": meta.get("version") or version,
         }
         self._cache[listing_type] = loaded
         return loaded
@@ -270,3 +280,9 @@ class ArtifactValuationPredictor:
             "model_version": f"mt_apartment_{payload['listing_type']}_v{loaded['version']}",
             "feature_names": feature_names,
         }
+
+
+# Module-level singleton so each worker process loads the LGB+XGB models once
+# (into its instance cache) and reuses them across jobs, rather than cold-loading
+# the artifacts from disk on every valuation.
+PREDICTOR = ArtifactValuationPredictor()

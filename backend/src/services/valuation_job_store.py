@@ -90,6 +90,20 @@ async def check_global_daily_cap() -> tuple[bool, str | None]:
     return True, None
 
 
+async def release_abuse_budget(identifier: str) -> None:
+    """Give back one unit of per-client + global budget when an already-counted
+    request fails to enqueue (so a broker outage doesn't permanently eat quota).
+    Counters floor at 0; best-effort (never raises)."""
+    keys = (_rate_key("hour", identifier), _rate_key("day", identifier), _global_cap_key())
+    for key in keys:
+        try:
+            current = await redis_client.get(key)
+            if current is not None and int(current) > 0:
+                await redis_client.decr(key)
+        except (ValueError, TypeError):
+            continue
+
+
 def set_job_status_sync(job_id: str, payload: dict[str, Any]) -> None:
     client = Redis.from_url(settings.redis_url, decode_responses=True)
     try:

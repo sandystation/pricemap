@@ -19,6 +19,7 @@ from src.services.valuation_job_store import (
     count_active_jobs,
     get_job_status,
     increment_rate_limit,
+    release_abuse_budget,
     set_job_status,
 )
 from src.services.valuation_service import ValuationService
@@ -207,7 +208,10 @@ async def _store_image_uploads(form, job_id: str) -> tuple[list[str], Path | Non
 @router.post("/enriched", response_model=EnrichedValuationJobResponse)
 async def create_enriched_valuation(request: Request):
     """Queue an enriched Malta apartment valuation with text/image preprocessing."""
-    await _enforce_abuse_limits(request)
+    # Abuse limits are enforced AFTER validation + image storage (below), so that
+    # invalid requests (400s) don't consume the per-IP rate limit or the global
+    # daily spend cap -- only requests that will actually cost a Gemini/Nominatim
+    # call do.
     form = await request.form()
     country_code = str(_form_value(form, "country_code", "")).upper()
     property_type = str(_form_value(form, "property_type", "")).lower()
@@ -284,6 +288,13 @@ async def create_enriched_valuation(request: Request):
     job_id = uuid4().hex
     image_paths, upload_dir = await _store_image_uploads(form, job_id)
 
+    # Only now (valid request, images stored) consume the abuse budget.
+    try:
+        await _enforce_abuse_limits(request)
+    except HTTPException:
+        _cleanup_upload_dir(upload_dir)
+        raise
+
     await set_job_status(
         job_id,
         {
@@ -296,6 +307,8 @@ async def create_enriched_valuation(request: Request):
     try:
         process_enriched_valuation.delay(job_id, payload, image_paths)
     except Exception as exc:
+        # Give the budget back: the request never reached the worker.
+        await release_abuse_budget(_client_identifier(request))
         await set_job_status(
             job_id,
             {
