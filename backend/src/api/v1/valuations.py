@@ -15,6 +15,7 @@ from src.schemas.valuation import (
     ValuationResponse,
 )
 from src.services.valuation_job_store import (
+    check_global_daily_cap,
     count_active_jobs,
     get_job_status,
     increment_rate_limit,
@@ -50,9 +51,27 @@ def _form_value(form, key: str, default=None):
 
 
 def _client_identifier(request: Request) -> str:
+    """Resolve the rate-limit identity from trusted-proxy headers only.
+
+    X-Forwarded-For is client-controllable: a caller can prepend arbitrary
+    tokens, and the trusted proxy only APPENDS the real peer to the right. So we
+    never trust the left-most (client-supplied) token. Preference order:
+      1. X-Real-IP (nginx sets this to the real peer $remote_addr), else
+      2. the trusted_proxy_count-th entry from the RIGHT of X-Forwarded-For
+         (the hop the trusted proxy actually observed), else
+      3. the direct socket peer.
+    This is only sound when the app is reachable exclusively via the proxy — do
+    not publish the app port directly to untrusted networks.
+    """
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip and real_ip.strip():
+        return real_ip.strip()
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
-        return forwarded_for.split(",", 1)[0].strip()
+        hops = [hop.strip() for hop in forwarded_for.split(",") if hop.strip()]
+        if hops:
+            index = min(max(settings.trusted_proxy_count, 1), len(hops))
+            return hops[-index]
     if request.client and request.client.host:
         return request.client.host
     return "unknown"
@@ -70,6 +89,10 @@ async def _enforce_abuse_limits(request: Request) -> None:
         allowed, message = await increment_rate_limit(_client_identifier(request))
         if not allowed:
             raise HTTPException(status_code=429, detail=message)
+
+        global_allowed, global_message = await check_global_daily_cap()
+        if not global_allowed:
+            raise HTTPException(status_code=429, detail=global_message)
     except HTTPException:
         raise
     except Exception as exc:

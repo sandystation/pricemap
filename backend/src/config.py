@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     # API
     api_v1_prefix: str = "/api/v1"
     cors_origins: list[str] = ["http://localhost:3000"]
+    # Number of trusted reverse-proxy hops in front of the app. The real client
+    # IP is read this many entries from the RIGHT of X-Forwarded-For (the hop the
+    # trusted proxy actually observed), never the client-supplied left-most token.
+    trusted_proxy_count: int = 1
 
     # Geocoding
     nominatim_user_agent: str = "pricemap/0.1"
@@ -28,6 +32,10 @@ class Settings(BaseSettings):
     valuation_rate_limit_hour: int = 5
     valuation_rate_limit_day: int = 20
     valuation_max_active_jobs: int = 25
+    # Global hard ceiling on accepted enriched valuations per day, independent of
+    # client identity. Bounds total paid Gemini/Nominatim spend even if per-client
+    # rate limiting is evaded.
+    valuation_global_daily_cap: int = 500
 
     # Runtime LLM enrichment
     llm_provider: str = "google"

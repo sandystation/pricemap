@@ -15,6 +15,12 @@ def _rate_key(scope: str, identifier: str) -> str:
     return f"valuation:enriched:rate:{scope}:{identifier}"
 
 
+# Deliberately OUTSIDE the "valuation:enriched:*" prefix so count_active_jobs'
+# scan does not pick it up and try to JSON-parse an integer counter.
+def _global_cap_key() -> str:
+    return "valuation:globalcap:day"
+
+
 async def set_job_status(job_id: str, payload: dict[str, Any]) -> None:
     await redis_client.set(
         _job_key(job_id),
@@ -64,6 +70,23 @@ async def increment_rate_limit(identifier: str) -> tuple[bool, str | None]:
             f"Rate limit exceeded: {settings.valuation_rate_limit_day} "
             "enriched valuations per day"
         )
+    return True, None
+
+
+async def check_global_daily_cap() -> tuple[bool, str | None]:
+    """Enforce a global daily ceiling on accepted enriched valuations.
+
+    Independent of client identity, so it bounds total paid Gemini/Nominatim
+    spend even if per-client rate limiting is evaded (e.g. via spoofed headers).
+    Call this only AFTER the per-client limit passes, so requests rejected by the
+    per-client limit do not consume the global budget.
+    """
+    key = _global_cap_key()
+    count = await redis_client.incr(key)
+    if count == 1:
+        await redis_client.expire(key, 86400)
+    if count > settings.valuation_global_daily_cap:
+        return False, "Daily enriched-valuation capacity reached. Please try again tomorrow."
     return True, None
 
 
