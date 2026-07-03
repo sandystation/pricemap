@@ -465,3 +465,29 @@ the new model's honest 36.4% -- production was already at ~this level; the old 1
 just hid it. The new models also carry no `province_enc` confidence penalty at serve.
 Follow-up to recover accuracy honestly: collect the dropped amenities in the form,
 or compute `city_population`/`rental_density_2km` server-side, then re-add them.
+
+---
+
+## Malta improvement exploration - 2026-07-03
+
+Explored improvement levers for the serve-consistent v20260703 models (5-avenue
+analysis + measured each with `train_valuation.py --eval-only`). Outcome:
+
+**Training levers — no material accuracy gain (rent is at its noise floor).**
+Measured (rent, honest serve-consistent CV): baseline L2 18.2% / R2 0.662 / within10 36.4%;
++has_area 18.2% (inert); L1 objective 18.1% but R2 drops to 0.623; L1+monotone impossible
+in LightGBM; Huber overflows. Sale: baseline 12.2%; monotone 12.4% (slightly worse MAPE,
++0.005 R2). Within-locality rent price CV is ~0.5-0.6, so rent CV MAPE will not fall much
+below ~16% from feature/loss changes. Area imputation explicitly rejected (rent area 20%
+coverage is genuine scarcity; area explains only ~7% of residual variance beyond
+locality x bedrooms). Kept `--eval-only/--objective/--monotone/--drop-features` as tooling;
+did NOT change the production model.
+
+**The real win was a serve-side bug, invisible to CV:** Nominatim returns Maltese endonyms
+(Tas-Sliema, San Giljan, Ix-Xaghra) that never matched the anglicized encoder keys, so
+`locality_enc` (the top categorical) was silently NaN for most real requests, and `is_gozo`
+(name-prefix based) was always 0 for Gozo (~0.64x price). Added `backend/src/ml/locality_resolver.py`
+(endonym normalization + aliases + fuzzy + nearest-centroid fallback) and derived `is_gozo`
+from latitude (>36.0). Validated on real data: nearest-centroid top-1 locality recovery
+100% (in-sample; proves geographic separability), is_gozo-by-latitude 100.00%. No retrain
+needed — it makes serve inputs match what v20260703 already learned.

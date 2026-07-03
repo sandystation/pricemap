@@ -886,10 +886,15 @@ def train_and_evaluate(
     df: pd.DataFrame,
     feature_names: list[str],
     n_folds: int = N_FOLDS,
+    objective: str = "l2",
+    monotone: bool = False,
 ) -> dict:
     """
     Train LightGBM + XGBoost ensemble with spatial CV.
     Uses LightGBM native categorical encoding for locality/province.
+
+    objective: "l2" (default squared error), "l1" (absolute error, MAPE-aligned),
+        or "huber". monotone: enforce price-increasing constraints on size features.
     """
     log_target = np.log(df["price_eur"].values)
     lats = df["lat"].values
@@ -924,6 +929,26 @@ def train_and_evaluate(
         + list(LLM_IMAGE_CATEGORICAL.keys())
     )
 
+    # Per-run param overrides (objective + monotonic constraints)
+    lgb_params = dict(LGBM_PARAMS)
+    xgb_params = dict(XGB_PARAMS)
+    if objective == "l1":
+        lgb_params["objective"] = "regression_l1"
+        xgb_params["objective"] = "reg:absoluteerror"
+    elif objective == "huber":
+        lgb_params["objective"] = "huber"
+        lgb_params["alpha"] = 0.9
+        xgb_params["objective"] = "reg:pseudohubererror"
+    if monotone:
+        # Price is monotonically increasing in size. Never constrain categoricals.
+        mono_up = {
+            "area_sqm", "area_sqm_log", "bedrooms", "bathrooms", "rooms",
+            "total_int_area", "total_ext_area",
+        }
+        mono_vec = [1 if f in mono_up else 0 for f in feature_names]
+        lgb_params["monotone_constraints"] = mono_vec
+        xgb_params["monotone_constraints"] = tuple(mono_vec)
+
     localities_arr = df["locality"].values
     splits = spatial_cv_splits(lats, n_folds, localities=localities_arr)
 
@@ -938,13 +963,13 @@ def train_and_evaluate(
         y_test = log_target[test_idx]
 
         # LightGBM with native categorical support
-        lgb_model = lgb.LGBMRegressor(**LGBM_PARAMS)
+        lgb_model = lgb.LGBMRegressor(**lgb_params)
         lgb_model.fit(X_train, y_train, eval_set=[(X_test, y_test)],
                       categorical_feature=cat_indices)
         lgb_pred_log = lgb_model.predict(X_test)
 
         # XGBoost (uses integer codes as ordinal -- still benefits)
-        xgb_model = xgb.XGBRegressor(**XGB_PARAMS)
+        xgb_model = xgb.XGBRegressor(**xgb_params)
         xgb_model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         xgb_pred_log = xgb_model.predict(X_test)
 
@@ -983,11 +1008,11 @@ def train_and_evaluate(
 
     X_full = _build_feature_matrix(df, base_cols, feature_names, loc_codes, prov_codes, np.arange(len(df)))
 
-    params_no_es = {k: v for k, v in LGBM_PARAMS.items() if k != "early_stopping_rounds"}
+    params_no_es = {k: v for k, v in lgb_params.items() if k != "early_stopping_rounds"}
     final_lgb = lgb.LGBMRegressor(**params_no_es)
     final_lgb.fit(X_full, log_target, categorical_feature=cat_indices)
 
-    params_no_es_xgb = {k: v for k, v in XGB_PARAMS.items() if k != "early_stopping_rounds"}
+    params_no_es_xgb = {k: v for k, v in xgb_params.items() if k != "early_stopping_rounds"}
     final_xgb = xgb.XGBRegressor(**params_no_es_xgb)
     final_xgb.fit(X_full, log_target, verbose=False)
 
@@ -1169,6 +1194,23 @@ def main():
              "metadata, RE/MAX-only amenities, province_enc) so CV metrics "
              "reflect real production accuracy with no train/serve skew.",
     )
+    parser.add_argument(
+        "--eval-only", action="store_true",
+        help="Run cross-validation and print metrics but do NOT save artifacts "
+             "(for measuring feature/config variants without overwriting a model).",
+    )
+    parser.add_argument(
+        "--objective", default="l2", choices=["l2", "l1", "huber"],
+        help="Regression objective: l2 (default), l1 (absolute error, MAPE-aligned), or huber.",
+    )
+    parser.add_argument(
+        "--monotone", action="store_true",
+        help="Enforce price-increasing monotonic constraints on size features.",
+    )
+    parser.add_argument(
+        "--drop-features", default="",
+        help="Comma-separated feature names to exclude (for ablation / dropping inert features).",
+    )
     args = parser.parse_args()
 
     config_key = (args.property_type, args.listing_type)
@@ -1257,7 +1299,15 @@ def main():
             f"Serve-consistent mode: {len(feature_names)} features "
             f"(excluded {len(SERVE_ABSENT_FEATURES)} serve-absent features)"
         )
-    results = train_and_evaluate(df, feature_names)
+    if args.drop_features:
+        drop = {f.strip() for f in args.drop_features.split(",") if f.strip()}
+        feature_names = [f for f in feature_names if f not in drop]
+        logger.info(f"Dropped {len(drop)} features via --drop-features: {sorted(drop)}")
+    if args.objective != "l2" or args.monotone:
+        logger.info(f"objective={args.objective} monotone={args.monotone}")
+    results = train_and_evaluate(
+        df, feature_names, objective=args.objective, monotone=args.monotone
+    )
     results["serve_consistent"] = args.serve_consistent
     if args.serve_consistent:
         results["excluded_features"] = sorted(SERVE_ABSENT_FEATURES)
@@ -1268,7 +1318,10 @@ def main():
         results["llm_run_meta"] = llm_run_meta if len(llm_run_meta) > 1 else llm_run_meta[0]
 
     # Save
-    save_artifacts(results, args.property_type, args.listing_type, config)
+    if args.eval_only:
+        logger.info("Eval-only: skipping artifact save.")
+    else:
+        save_artifacts(results, args.property_type, args.listing_type, config)
 
     logger.info("Done.")
 
