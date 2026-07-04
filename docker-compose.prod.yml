@@ -1,6 +1,6 @@
-# Production stack for a single VM: redis + backend API + Celery worker + Caddy.
-# No Postgres (the /enriched valuation flow doesn't use it) and no frontend
-# (deployed on Vercel). Bring up with:
+# Production stack for a single VM: postgres + redis + backend API + Celery worker
+# + Next.js frontend + Caddy. Postgres backs Auth.js accounts (email/password +
+# Google OAuth). Bring up with:
 #   docker compose -f docker-compose.prod.yml up -d --build
 # Requires a .env file in this directory (see .env.prod.example).
 name: pricemap-prod
@@ -12,6 +12,24 @@ x-logging: &default-logging
     max-file: "3"
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    # No published port: only reachable on the compose network. Backs Auth.js
+    # (users / accounts / sessions / verification tokens + hashed passwords).
+    environment:
+      POSTGRES_DB: casaval
+      POSTGRES_USER: casaval
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U casaval -d casaval"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -91,10 +109,23 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        # NEXT_PUBLIC_* is baked at build time; points the browser at the API host.
+        # NEXT_PUBLIC_* is baked at build time (browser-visible).
         NEXT_PUBLIC_API_URL: https://${API_DOMAIN:?set API_DOMAIN in .env}
+        NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY:-}
+        NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST:-https://eu.i.posthog.com}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     restart: unless-stopped
+    # Server-side runtime secrets for Auth.js (from .env): DATABASE_URL, AUTH_SECRET,
+    # API_JWT_SECRET, GOOGLE_CLIENT_ID/SECRET, RESEND_API_KEY.
+    env_file:
+      - .env
+    environment:
+      AUTH_URL: https://${SITE_DOMAIN:?set SITE_DOMAIN in .env}
+      AUTH_TRUST_HOST: "true"
     # No published port — Caddy fronts it on the compose network.
+    depends_on:
+      postgres:
+        condition: service_healthy
     logging: *default-logging
 
   caddy:
@@ -116,6 +147,7 @@ services:
     logging: *default-logging
 
 volumes:
+  pgdata:
   redisdata:
   uploads:
   caddydata:
