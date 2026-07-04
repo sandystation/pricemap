@@ -1,5 +1,24 @@
-# Caddy reverse proxy for the PriceMap API. Auto-provisions Let's Encrypt TLS for
-# $API_DOMAIN (set in .env). Replaces the dev nginx config for production.
+# Caddy for the whole app. Auto-provisions Let's Encrypt TLS for each site.
+# $SITE_DOMAIN = frontend apex (e.g. casaval.eu); $API_DOMAIN = api host.
+
+# Frontend (Next.js)
+{$SITE_DOMAIN} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	reverse_proxy frontend:3000
+}
+
+# www -> apex
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}
+
+# API
 {$API_DOMAIN} {
 	# Allow the 40MB image-upload batches (nginx used client_max_body_size 45m).
 	request_body {

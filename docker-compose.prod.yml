@@ -75,16 +75,26 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    # concurrency=2 is ample for a low-volume beta. Each worker process loads the
-    # LightGBM+XGBoost models once (module-level singleton) and holds them in RAM
-    # (~hundreds of MB per process) — watch RAM before raising concurrency.
-    command: celery -A src.core.celery_app worker --loglevel=info --concurrency=2
+    # concurrency=1 keeps a single in-RAM copy of the LightGBM+XGBoost models
+    # (module-level singleton) — right for the 3.7 GB box. Raise only if RAM allows.
+    command: celery -A src.core.celery_app worker --loglevel=info --concurrency=1
     healthcheck:
       test: ["CMD-SHELL", "celery -A src.core.celery_app inspect ping -d celery@$$(hostname) || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging: *default-logging
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        # NEXT_PUBLIC_* is baked at build time; points the browser at the API host.
+        NEXT_PUBLIC_API_URL: https://${API_DOMAIN:?set API_DOMAIN in .env}
+    restart: unless-stopped
+    # No published port — Caddy fronts it on the compose network.
     logging: *default-logging
 
   caddy:
@@ -95,12 +105,14 @@ services:
       - "443:443"
     environment:
       API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env}
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env}
     volumes:
       - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddydata:/data
       - caddyconfig:/config
     depends_on:
       - backend
+      - frontend
     logging: *default-logging
 
 volumes:
