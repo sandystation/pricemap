@@ -26,6 +26,9 @@ dependencies = [
     "numpy>=1.26.0",
     "pandas>=2.2.0",
     "joblib>=1.4.0",
+    "pyjwt>=2.8.0",
+    "sentry-sdk>=2.0.0",
+    "posthog>=3.5.0",
 ]
 
 [project.optional-dependencies]

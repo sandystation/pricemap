@@ -44,6 +44,17 @@ class Settings(BaseSettings):
     llm_provider: str = "google"
     llm_model: str = "gemini-3.1-flash-lite-preview"
 
+    # Auth: the Next.js app mints a short-lived HS256 API token (shared secret)
+    # that this API verifies. require_auth toggles the soft->hard rollout: when
+    # False, /enriched still accepts anonymous callers (IP-rate-limited).
+    api_jwt_secret: str = ""
+    require_auth: bool = False
+
+    # Telemetry (env-gated; no-op when unset)
+    posthog_key: str = ""
+    posthog_host: str = "https://eu.i.posthog.com"
+    sentry_dsn: str = ""
+
     # Asking-to-transaction adjustment defaults
     adjustment_factors: dict[str, float] = {
         "MT": 0.97,  # Malta: PPR data available, small adjustment

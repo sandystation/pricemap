@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
+from src.core.auth import resolve_client
 from src.core.database import get_db
 from src.schemas.valuation import (
     EnrichedValuationJobResponse,
@@ -78,7 +79,9 @@ def _client_identifier(request: Request) -> str:
     return "unknown"
 
 
-async def _enforce_abuse_limits(request: Request) -> None:
+async def _enforce_abuse_limits(request: Request, user_id: str | None = None) -> None:
+    # Rate-limit per authenticated user when present, else per client IP.
+    identifier = f"user:{user_id}" if user_id else _client_identifier(request)
     try:
         active_jobs = await count_active_jobs()
         if active_jobs >= settings.valuation_max_active_jobs:
@@ -87,7 +90,7 @@ async def _enforce_abuse_limits(request: Request) -> None:
                 detail="Too many enriched valuations are currently queued. Try again shortly.",
             )
 
-        allowed, message = await increment_rate_limit(_client_identifier(request))
+        allowed, message = await increment_rate_limit(identifier)
         if not allowed:
             raise HTTPException(status_code=429, detail=message)
 
@@ -208,8 +211,11 @@ async def _store_image_uploads(form, job_id: str) -> tuple[list[str], Path | Non
 @router.post("/enriched", response_model=EnrichedValuationJobResponse)
 async def create_enriched_valuation(request: Request):
     """Queue an enriched Malta apartment valuation with text/image preprocessing."""
+    # Resolve the caller up front (cheap, header-only): a valid Bearer token -> user
+    # id, an invalid token -> 401, no token -> anonymous unless require_auth is on.
+    user_id = resolve_client(request)
     # Abuse limits are enforced AFTER validation + image storage (below), so that
-    # invalid requests (400s) don't consume the per-IP rate limit or the global
+    # invalid requests (400s) don't consume the per-user/IP rate limit or the global
     # daily spend cap -- only requests that will actually cost a Gemini/Nominatim
     # call do.
     form = await request.form()
@@ -283,6 +289,7 @@ async def create_enriched_valuation(request: Request):
         "has_elevator": _bool_value(form, "has_elevator"),
         "has_balcony": _bool_value(form, "has_balcony"),
         "description": description,
+        "user_id": user_id,
     }
 
     job_id = uuid4().hex
@@ -290,7 +297,7 @@ async def create_enriched_valuation(request: Request):
 
     # Only now (valid request, images stored) consume the abuse budget.
     try:
-        await _enforce_abuse_limits(request)
+        await _enforce_abuse_limits(request, user_id)
     except HTTPException:
         _cleanup_upload_dir(upload_dir)
         raise
@@ -308,7 +315,7 @@ async def create_enriched_valuation(request: Request):
         process_enriched_valuation.delay(job_id, payload, image_paths)
     except Exception as exc:
         # Give the budget back: the request never reached the worker.
-        await release_abuse_budget(_client_identifier(request))
+        await release_abuse_budget(f"user:{user_id}" if user_id else _client_identifier(request))
         await set_job_status(
             job_id,
             {

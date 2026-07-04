@@ -31,7 +31,7 @@ app.add_middleware(
     # aren't needed; keep methods/headers scoped to what the frontend actually sends.
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Reject spoofed Host headers in production (defense-in-depth alongside
