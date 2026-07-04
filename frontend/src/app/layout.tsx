@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PriceMap - Property Analysis",
+  title: "Casaval - Property Analysis",
   description:
     "Comparable-property analysis and valuation support for underserved EU markets",
 };

@@ -16,14 +16,9 @@ const MAX_DESCRIPTION_CHARS = 6000;
 const schema = z.object({
   listing_type: z.enum(["sale", "rent"]),
   address: z.string().min(3, "Enter at least 3 characters"),
-  property_type: z.enum([
-    "apartment",
-    "house",
-    "villa",
-    "studio",
-    "maisonette",
-    "penthouse",
-  ]),
+  // Beta covers Malta apartments only (the enriched model + backend accept
+  // apartment only); the selector is likewise limited to apartment.
+  property_type: z.enum(["apartment"]),
   area_sqm: z.coerce.number().positive("Area must be positive").max(10000),
   floor: z.coerce.number().int().min(-2).max(100).optional().or(z.literal("")),
   total_floors: z.coerce.number().int().min(1).max(100).optional().or(z.literal("")),
@@ -262,6 +257,7 @@ export function PropertyForm({
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-gray-400">Malta apartments (beta)</p>
         </div>
         <div>
           <label className={labelClass}>Area (m²) *</label>

@@ -28,7 +28,7 @@ export default function CountryPage() {
       <header className="border-b border-[var(--color-border)] px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link href="/" className="text-2xl font-bold text-[var(--color-primary)]">
-            PriceMap
+            Casaval
           </Link>
           <nav className="flex items-center gap-4">
             <span className="text-sm text-[var(--color-text-secondary)]">

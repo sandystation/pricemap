@@ -38,7 +38,7 @@ export default function Home() {
       <header className="border-b border-[var(--color-border)] px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <h1 className="text-2xl font-bold text-[var(--color-primary)]">
-            PriceMap
+            Casaval
           </h1>
           <nav className="flex gap-4 text-sm text-[var(--color-text-secondary)]">
             <span>About</span>
@@ -103,7 +103,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-[var(--color-border)] px-6 py-8 text-center text-sm text-[var(--color-text-secondary)]">
         <p>
-          PriceMap - Open source property valuation for Malta, Bulgaria, Cyprus
+          Casaval - Open source property valuation for Malta, Bulgaria, Cyprus
           &amp; Croatia
         </p>
       </footer>

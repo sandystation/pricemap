@@ -64,7 +64,7 @@ export default function MaltaProfessionalBetaPage() {
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <Link href="/" className={styles.brand}>
-            PriceMap
+            Casaval
           </Link>
           <nav className={styles.nav}>
             <Link href="/mt" className={styles.navLink}>
