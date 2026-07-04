@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -35,8 +34,8 @@ def _confidence(missing_features: list[str], image_paths: list[str]) -> float:
     return round(max(30.0, min(95.0, score)), 1)
 
 
-async def _geocode(payload: dict[str, Any]):
-    return await GeocodingService().geocode(
+def _geocode(payload: dict[str, Any]):
+    return GeocodingService().geocode_sync(
         address=str(payload["address"]),
         country_code=str(payload["country_code"]),
     )
@@ -58,7 +57,7 @@ def process_enriched_valuation(
                 "missing_features": [],
             },
         )
-        geo = asyncio.run(_geocode(payload))
+        geo = _geocode(payload)
 
         set_job_status_sync(
             job_id,
