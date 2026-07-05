@@ -185,6 +185,15 @@ export function PropertyForm({
             status.result,
             status.lat && status.lon ? [status.lat, status.lon] : undefined
           );
+          // Auto-save to history for logged-in users; silently no-ops (401) for anonymous.
+          void fetch("/api/valuations/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              input: { ...data, country_code: countryCode },
+              result: status.result,
+            }),
+          }).catch(() => {});
           setStatusMessage("Model-backed valuation complete");
           return;
         }
