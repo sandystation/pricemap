@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^3.9.0",
     "@sentry/nextjs": "^10.63.0",
     "@tanstack/react-query": "^5.50.0",
+    "bcryptjs": "^3.0.3",
     "clsx": "^2.1.0",
     "jsonwebtoken": "^9.0.3",
     "leaflet": "^1.9.4",
@@ -25,6 +26,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.52.0",
     "react-leaflet": "^5.0.0",
+    "resend": "^6.17.1",
     "tailwind-merge": "^2.4.0",
     "zod": "^3.23.0"
   },

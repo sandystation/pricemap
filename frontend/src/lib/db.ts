@@ -10,4 +10,12 @@ export const pool =
   globalForPg.authPool ??
   new Pool({ connectionString: process.env.AUTH_DATABASE_URL, max: 5 });
 
+// Without an 'error' handler, node-postgres rethrows errors on idle clients
+// (e.g. a Postgres restart/failover drops the connection) as an uncaught
+// exception that would crash the single frontend replica. Log and let the pool
+// discard the dead client. Never log the connection string.
+if (!globalForPg.authPool) {
+  pool.on("error", (err) => console.error("[db] idle client error:", err.message));
+}
+
 if (process.env.NODE_ENV !== "production") globalForPg.authPool = pool;
