@@ -13,7 +13,7 @@ x-logging: &default-logging
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgis/postgis:16-3.5
     restart: unless-stopped
     # No published port: only reachable on the compose network. Backs Auth.js
     # (users / accounts / sessions / verification tokens + hashed passwords).
@@ -27,6 +27,7 @@ services:
       # For an already-initialized volume, apply it manually (see the SQL header).
       - ./infra/postgres/auth-schema.sql:/docker-entrypoint-initdb.d/10-auth-schema.sql:ro
       - ./infra/postgres/app-schema.sql:/docker-entrypoint-initdb.d/20-app-schema.sql:ro
+      - ./infra/postgres/listings-schema.sql:/docker-entrypoint-initdb.d/30-listings-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U casaval -d casaval"]
       interval: 10s

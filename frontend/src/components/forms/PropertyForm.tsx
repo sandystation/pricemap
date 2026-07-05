@@ -181,17 +181,36 @@ export function PropertyForm({
           throw new Error(status.error || "Enriched valuation failed");
         }
         if (status.status === "complete" && status.result) {
-          onResult(
-            status.result,
-            status.lat && status.lon ? [status.lat, status.lon] : undefined
-          );
+          const coords: [number, number] | undefined =
+            status.lat && status.lon ? [status.lat, status.lon] : undefined;
+          let enriched = status.result;
+          // Fetch nearby comparables (best-effort) and merge into the result so the
+          // comps panel, map markers, and saved history all include them.
+          if (coords) {
+            try {
+              const q = new URLSearchParams({
+                lat: String(status.lat),
+                lon: String(status.lon),
+                type: data.property_type,
+                listing_type: data.listing_type,
+                area: String(data.area_sqm),
+              });
+              const cr = await fetch(`/api/comparables?${q.toString()}`);
+              if (cr.ok) {
+                enriched = { ...enriched, comparables: (await cr.json()).comparables ?? [] };
+              }
+            } catch {
+              // ignore — comparables are supplementary to the estimate
+            }
+          }
+          onResult(enriched, coords);
           // Auto-save to history for logged-in users; silently no-ops (401) for anonymous.
           void fetch("/api/valuations/save", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               input: { ...data, country_code: countryCode },
-              result: status.result,
+              result: enriched,
             }),
           }).catch(() => {});
           setStatusMessage("Model-backed valuation complete");

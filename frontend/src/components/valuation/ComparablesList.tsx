@@ -16,14 +16,22 @@ const formatEur = (value: number) =>
 export function ComparablesList({ comparables }: ComparablesListProps) {
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-6">
-      <h4 className="mb-4 text-sm font-semibold">
-        Comparable Properties ({comparables.length})
+      <h4 className="mb-1 text-sm font-semibold">
+        Comparable listings ({comparables.length})
       </h4>
+      <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
+        Nearby asking prices from recent listings — sorted by distance.
+      </p>
       <div className="space-y-3">
         {comparables.map((comp) => (
-          <div
+          <a
             key={comp.id}
-            className="flex items-center justify-between rounded-lg border border-[var(--color-border)] p-3"
+            href={comp.url ?? undefined}
+            target={comp.url ? "_blank" : undefined}
+            rel={comp.url ? "noopener noreferrer" : undefined}
+            className={`flex items-center justify-between rounded-lg border border-[var(--color-border)] p-3 ${
+              comp.url ? "transition hover:border-[var(--color-primary)]" : "cursor-default"
+            }`}
           >
             <div>
               <p className="text-sm font-medium">{formatEur(comp.price_eur)}</p>
@@ -47,7 +55,7 @@ export function ComparablesList({ comparables }: ComparablesListProps) {
                 {comp.source}
               </p>
             </div>
-          </div>
+          </a>
         ))}
       </div>
     </div>
