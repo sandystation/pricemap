@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "Casaval - Property Analysis",
@@ -22,7 +23,9 @@ export default function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body className="min-h-screen bg-[var(--color-bg)]">{children}</body>
+      <body className="min-h-screen bg-[var(--color-bg)]">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

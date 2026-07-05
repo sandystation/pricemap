@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api } from "@/lib/api-client";
+import { track } from "@/lib/analytics";
 import { PROPERTY_TYPES, PROPERTY_CONDITIONS } from "@/lib/constants";
 import type { PropertyCondition, ValuationResponse } from "@/lib/types";
 
@@ -125,6 +126,15 @@ export function PropertyForm({
     setError(null);
     setStatusMessage("Uploading case details");
 
+    track("valuation_submitted", {
+      country_code: countryCode,
+      listing_type: data.listing_type,
+      property_type: data.property_type,
+      area_sqm: data.area_sqm,
+      has_images: !!images,
+      image_count: images ? images.length : 0,
+    });
+
     try {
       const formData = new globalThis.FormData();
       const append = (key: string, value: unknown) => {
@@ -182,7 +192,9 @@ export function PropertyForm({
 
       throw new Error("Valuation is still running. Try refreshing the result shortly.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to get valuation");
+      const message = err instanceof Error ? err.message : "Failed to get valuation";
+      setError(message);
+      track("valuation_error", { message, country_code: countryCode });
     } finally {
       setLoading(false);
       setStatusMessage(null);

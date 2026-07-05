@@ -38,3 +38,13 @@ else:
         task_acks_late=True,
         worker_prefetch_multiplier=1,
     )
+
+    from celery.signals import worker_process_init
+
+    @worker_process_init.connect
+    def _init_worker_sentry(**_kwargs: object) -> None:
+        # Initialize Sentry inside each worker process (no-op without SENTRY_DSN).
+        # sentry-sdk auto-enables its Celery integration, capturing task failures.
+        from src.core.telemetry import init_sentry
+
+        init_sentry("worker")

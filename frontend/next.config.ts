@@ -10,7 +10,10 @@ const nextConfig: NextConfig = {
       // beforeFiles runs before filesystem routes, so it overrides app/page.tsx
       // while keeping the URL as "/".
       beforeFiles: [{ source: "/", destination: "/mt/professional-beta" }],
-      afterFiles: [{ source: "/api/:path*", destination: `${API}/api/:path*` }],
+      // Only proxy the backend API (/api/v1/*) to FastAPI. /api/auth/* and
+      // /api/token are Auth.js route handlers that must stay in Next.js — a
+      // broad /api/:path* rewrite would forward them to the backend (404).
+      afterFiles: [{ source: "/api/v1/:path*", destination: `${API}/api/v1/:path*` }],
     };
   },
 };

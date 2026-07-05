@@ -7,6 +7,7 @@ import Link from "next/link";
 import { PropertyForm } from "@/components/forms/PropertyForm";
 import { PriceCard } from "@/components/valuation/PriceCard";
 import { ComparablesList } from "@/components/valuation/ComparablesList";
+import { track } from "@/lib/analytics";
 import { COUNTRY_CONFIGS, type ValuationResponse } from "@/lib/types";
 
 const MapContainer = dynamic(
@@ -66,6 +67,13 @@ export default function ValuationPage() {
               onResult={(val, latlon) => {
                 setResult(val);
                 if (latlon) setCoords(latlon);
+                track("result_viewed", {
+                  estimate_eur: val.estimate_eur,
+                  price_per_sqm: val.price_per_sqm,
+                  confidence_score: val.confidence_score,
+                  model_version: val.model_version,
+                  comparables_count: val.comparables.length,
+                });
               }}
             />
           </div>

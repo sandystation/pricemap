@@ -200,7 +200,9 @@ class LLMEnrichmentService:
         )
         prompt = build_user_prompt(payload, with_images=bool(images))
 
-        contents = []
+        # Heterogeneous Gemini contents list: image Parts followed by the prompt
+        # string (the SDK's ContentListUnion accepts both).
+        contents: list[Any] = []
         for image in images:
             contents.append(
                 types.Part.from_bytes(
