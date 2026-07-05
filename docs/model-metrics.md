@@ -515,3 +515,70 @@ Measured with `--eval-only` on the serve-consistent feature set. Results (MAPE /
 
 Conclusion: the big wins already landed (serve-consistent honest model + serve-side locality/Gozo fix).
 Second-wave feature/loss tuning offers only marginal gains; production model kept at v20260703.
+
+---
+
+## v20260705 — Durable monotone retrain + serve-side condition (task #18) - 2026-07-05
+
+Follow-up to the PR #10 serve-side recalibration. Two durable changes: (1) retrained
+both models with **monotonic size constraints**, (2) wired the form's `condition`
+dropdown into the model at serve time.
+
+### Retrain (monotonic constraints)
+
+`train_valuation.py --serve-consistent --monotone` for sale + rent. Price is constrained
+monotonically increasing in `{area_sqm, area_sqm_log, bedrooms, bathrooms, rooms,
+total_int_area, total_ext_area}` (applied to both LGB `monotone_constraints` and XGB).
+Ensemble weights 0.85/0.15 (LGB/XGB, from PR #10). Categoricals never constrained.
+
+| Model | v20260703 (baseline) | v20260705 (monotone) |
+|-------|----------------------|----------------------|
+| Sale MAPE / R2 / within10 | 12.2 / 0.776 / 59.2 | **11.8 / 0.802 / 60.6** |
+| Rent MAPE / R2 / within10 | 18.2 / 0.662 / 36.4 | **18.6 / 0.640 / 35.4** |
+
+The monotone constraint **improved sale** (regularizes the size axis: -0.4pp MAPE, +0.026 R2)
+and left rent ~flat (within noise; rent is dominated by locality×bedrooms, area is scarce).
+Contradicts the earlier `--eval-only` note that monotone cost +0.2pp — that test predated the
+0.85/0.15 weight change; monotone + LGB-heavy weights is a net win.
+
+### Monotonicity eval (the primary QA FAIL — now fixed)
+
+Total price is now strictly increasing with size in every locality, both holding bedrooms
+constant (pure area) and along a realistic beds-grow-with-size ladder. Example (sale, bare):
+
+| Locality | 55m² | 75m² | 100m² | 150m² | 220m² | monotonic? |
+|----------|------|------|-------|-------|-------|-----------|
+| Sliema (bed=2) | 390k | 450k | 503k | 622k | 893k | YES |
+| Bugibba (bed=2) | 290k | 324k | 372k | 451k | 781k | YES |
+| Gozo (bed=2) | 250k | 262k | 283k | 308k | 562k | YES |
+
+**Residual tail caveats** (data-sparse extrapolation, not ordering bugs): a 35m² studio still
+prints a high €/m² (Sliema ~€10.5k/m²) because <35m² units are rare in training; and €/m² ticks
+up at 220m² in cheap areas (large units rare there). Total price stays correctly ordered; the
+wide "Low"-confidence band covers the tail. Most real inputs (55–150m²) are unaffected.
+
+### Serve-side: `condition` dropdown now moves the estimate
+
+RE/MAX has no structured condition field, so the model only ever learned condition via the
+LLM-extracted `llm_condition` (1–5) from listing text. The form's `condition` dropdown was
+therefore **inert with no description**. Fix (`artifact_predictor._fill_enriched`): map the
+dropdown → `llm_condition` (`new/excellent→5, good→4, needs_renovation→2, shell→1`); real LLM
+output still overrides. We deliberately do **not** impute the other `llm_*` features to
+modal/neutral values — doing so biased the sparse estimate **down ~28%** (regressing the
+already-calibrated bare case); the model handles genuinely-missing `llm_*` natively as NaN.
+
+### Sparse-vs-full calibration (Sliema 90m², comp median €520k / €5,889/m²)
+
+| Input | Estimate | €/m² | vs comp median |
+|-------|----------|------|----------------|
+| bare (no condition) | €584k | 6,490 | +10% |
+| condition=shell | €582k | 6,470 | +10% |
+| condition=new | €610k | 6,782 | +15% |
+| LLM: luxury + sea view | €864k | 9,600 | high-end |
+| LLM: budget + shell | €538k | 5,983 | +2% |
+
+Bare calibration preserved from PR #10 (+10%, well within the ±35% QA tolerance); the dropdown
+now shifts the estimate sensibly (shell < good < new); a real description with luxury/sea-view
+features still drives the estimate up as expected.
+
+Both models deployed at v20260705; v20260703 retained for rollback.

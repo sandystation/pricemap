@@ -77,6 +77,12 @@ LLM_MAPPED_FEATURES = {
 # area_sqm separately (they're near-identical for apartments).
 _STRUCT_IMPUTE = {"total_ext_area": 10.0, "rooms": 6.0, "bathrooms": 2.0, "bedrooms": 2.0}
 
+# The form's condition dropdown → the trained llm_condition scale (1-5), so the
+# user's choice actually moves the estimate (RE/MAX has no structured condition
+# field, so the model only ever learned condition via llm_condition from text).
+_CONDITION_TO_LLM = {"new": 5, "excellent": 5, "good": 4, "needs_renovation": 2, "shell": 1}
+
+
 
 def _artifact_dir() -> Path:
     configured = Path(settings.model_artifacts_dir)
@@ -152,6 +158,23 @@ class ArtifactValuationPredictor:
         self._cache[listing_type] = loaded
         return loaded
 
+    def _fill_enriched(self, payload: dict[str, Any], enriched: dict[str, Any]) -> dict[str, Any]:
+        """Overlay the form's `condition` dropdown onto the LLM feature dict as
+        `condition` (→ the model's trained llm_condition signal), so the dropdown
+        moves the estimate even with no description.
+
+        We deliberately do NOT impute the *other* llm_* features to modal/neutral
+        values: filling them all biases the estimate down ~28% (regressing the
+        already-calibrated sparse case, where structural imputation lands a bare
+        Sliema flat near the comp median). The model handles genuinely-missing
+        llm_* natively as NaN. Real LLM output (from a description) always wins.
+        """
+        filled = dict(enriched or {})
+        cond = payload.get("condition")
+        if filled.get("condition") is None and cond in _CONDITION_TO_LLM:
+            filled["condition"] = _CONDITION_TO_LLM[cond]
+        return filled
+
     def build_features(
         self,
         payload: dict[str, Any],
@@ -164,6 +187,8 @@ class ArtifactValuationPredictor:
         feature_names = loaded["meta"]["feature_names"]
         values = {name: np.nan for name in feature_names}
         missing: list[str] = []
+        raw_enriched = enriched or {}  # what the user/LLM actually supplied
+        enriched = self._fill_enriched(payload, raw_enriched)
 
         area = _as_float(payload.get("area_sqm"))
         actual_area = _as_float(enriched.get("actual_living_area"))
@@ -233,18 +258,18 @@ class ArtifactValuationPredictor:
         if "province_enc" in feature_names:
             missing.append("province_enc")
 
-        for required in [
-            "bathrooms",
-            "rooms",
-            "total_int_area",
-            "total_ext_area",
-            "llm_condition",
-            "llm_furnishing",
-            "llm_quality_tier",
-            "llm_construction_status",
-        ]:
-            if required in values and (values[required] is None or np.isnan(values[required])):
+        # Track what the USER (not imputation) actually supplied — drives the
+        # missing-features hint and the confidence band, so imputed defaults don't
+        # make a sparse input look confident.
+        for required in ["bathrooms", "rooms", "total_int_area", "total_ext_area"]:
+            if payload.get(required) in (None, ""):
                 missing.append(required)
+        cond_from_form = payload.get("condition") in _CONDITION_TO_LLM
+        if raw_enriched.get("condition") is None and not cond_from_form:
+            missing.append("llm_condition")
+        for req in ("furnishing", "quality_tier", "construction_status"):
+            if raw_enriched.get(req) is None:
+                missing.append("llm_" + req)
 
         # Serve-time imputation. The public form omits features the model was
         # trained WITH (~always present in training), so raw NaN is out-of-distribution
