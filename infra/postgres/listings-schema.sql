@@ -28,6 +28,10 @@ CREATE TABLE IF NOT EXISTS listings (
   geom geometry(Point, 4326) GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(lon, lat), 4326)) STORED
 );
 
+-- Geography GiST index: the comparables query uses ST_DWithin(geom::geography, …)
+-- for accurate metre distances, so the spatial predicate needs a GiST index on
+-- the geography CAST (a plain geometry index is ignored for a geography predicate).
+CREATE INDEX IF NOT EXISTS ix_listings_geog ON listings USING GIST ((geom::geography));
 CREATE INDEX IF NOT EXISTS ix_listings_geom ON listings USING GIST (geom);
 CREATE INDEX IF NOT EXISTS ix_listings_filter ON listings (listing_type, property_type, area_sqm);
 
