@@ -1,7 +1,9 @@
+import time
 from pathlib import Path
 from typing import Any
 
 from src.core.celery_app import celery_app
+from src.core.telemetry import capture_event
 from src.ml.artifact_predictor import PREDICTOR
 from src.schemas.valuation import ValuationResponse
 from src.services.geocoding_service import GeocodingService
@@ -47,6 +49,9 @@ def process_enriched_valuation(
     payload: dict[str, Any],
     image_paths: list[str],
 ) -> None:
+    started = time.monotonic()
+    user_id = str(payload.get("user_id") or "") or None
+    distinct_id = user_id or "anonymous"
     try:
         set_job_status_sync(
             job_id,
@@ -122,6 +127,31 @@ def process_enriched_valuation(
                 "model_version": prediction["model_version"],
             },
         )
+
+        capture_event(
+            distinct_id,
+            "valuation_completed",
+            {
+                "user_id": user_id,
+                "authenticated": user_id is not None,
+                "country_code": payload.get("country_code"),
+                "listing_type": payload.get("listing_type"),
+                "property_type": payload.get("property_type"),
+                "area_sqm": payload.get("area_sqm"),
+                "estimate_eur": result.estimate_eur,
+                "price_per_sqm": result.price_per_sqm,
+                "confidence_score": confidence_score,
+                "model_version": prediction["model_version"],
+                "comparables_count": len(result.comparables),
+                "has_images": bool(image_paths),
+                "image_count": len(image_paths),
+                "geocode_ok": geo.lat is not None and geo.lon is not None,
+                "llm_ok": bool(enriched),
+                "enriched_feature_count": len(enriched or {}),
+                "missing_feature_count": len(prediction["missing_features"]),
+                "duration_ms": round((time.monotonic() - started) * 1000),
+            },
+        )
     except Exception as exc:
         set_job_status_sync(
             job_id,
@@ -131,6 +161,17 @@ def process_enriched_valuation(
                 "message": "Enriched valuation failed",
                 "error": str(exc),
                 "missing_features": [],
+            },
+        )
+        capture_event(
+            distinct_id,
+            "valuation_failed",
+            {
+                "user_id": user_id,
+                "authenticated": user_id is not None,
+                "country_code": payload.get("country_code"),
+                "error": str(exc),
+                "duration_ms": round((time.monotonic() - started) * 1000),
             },
         )
         raise

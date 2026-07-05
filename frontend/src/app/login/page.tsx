@@ -4,6 +4,8 @@ import { signIn } from "next-auth/react";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { track } from "@/lib/analytics";
+
 function LoginInner() {
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") || "/mt/valuation";
@@ -16,7 +18,10 @@ function LoginInner() {
         </p>
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl })}
+          onClick={() => {
+            track("login_clicked", { provider: "google" });
+            signIn("google", { callbackUrl });
+          }}
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">

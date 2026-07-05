@@ -7,6 +7,11 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from src.api.v1.router import api_v1_router
 from src.config import settings
 from src.core.database import engine
+from src.core.telemetry import init_sentry
+
+# Instrument the API process for error tracking (no-op without SENTRY_DSN).
+# sentry-sdk auto-enables its FastAPI/Starlette integration here.
+init_sentry("api")
 
 
 @asynccontextmanager
