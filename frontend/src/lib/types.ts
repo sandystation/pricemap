@@ -50,6 +50,7 @@ export interface ComparableProperty {
   distance_m: number;
   listing_date: string | null;
   source: string;
+  url?: string | null;
 }
 
 export interface ValuationResponse {
