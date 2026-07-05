@@ -8,7 +8,7 @@ import Google from "next-auth/providers/google";
 export const authConfig: NextAuthConfig = {
   trustHost: true,
   secret: process.env.AUTH_SECRET,
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 }, // bound JWT lifetime to 30d
   pages: { signIn: "/login" },
   providers: [
     Google({

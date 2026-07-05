@@ -44,3 +44,17 @@ CREATE TABLE IF NOT EXISTS users (
   image TEXT,
   PRIMARY KEY (id)
 );
+
+-- === Credentials auth deltas (email/password) — idempotent =================
+-- Password hash for credentials users; NULL for OAuth-only (Google) users.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+
+-- Case-insensitive unique email (register + authorize both use LOWER(email)).
+-- The base DDL has no unique constraint on email, so add one.
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_key ON users (LOWER(email));
+
+-- The verification_token table above is REUSED for both flows: identifier is
+-- namespaced 'verify:<email>' / 'reset:<email>', `token` stores sha256(raw) hex
+-- (the raw token is emailed, never stored), `expires` carries the TTL (24h/1h).
+-- Single-use consume = DELETE ... WHERE ... AND expires > now() RETURNING.
+-- Housekeeping (optional cron): DELETE FROM verification_token WHERE expires < now();

@@ -10,7 +10,13 @@
 		Referrer-Policy strict-origin-when-cross-origin
 		-Server
 	}
-	reverse_proxy frontend:3000
+	reverse_proxy frontend:3000 {
+		# Caddy is the edge, so the immediate peer IS the real client. Overwrite
+		# X-Real-IP with it and strip any client-supplied X-Forwarded-For so the
+		# frontend's rate limiter (clientIp) can't be spoofed with a rotating header.
+		header_up X-Real-IP {remote_host}
+		header_up -X-Forwarded-For
+	}
 }
 
 # www -> apex

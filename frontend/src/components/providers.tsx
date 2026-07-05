@@ -20,6 +20,18 @@ function PostHogInit() {
       capture_pageleave: true,
       person_profiles: "identified_only",
       autocapture: false,
+      // Defense-in-depth: redact single-use auth secrets from any URL property
+      // before an event leaves the browser (the /verify + /reset-password links
+      // carry token/email in the query string).
+      sanitize_properties: (props) => {
+        for (const k of ["$current_url", "$referrer", "$pathname"]) {
+          const v = props[k];
+          if (typeof v === "string" && (v.includes("token=") || v.includes("email="))) {
+            props[k] = v.replace(/([?&](?:token|email)=)[^&]*/gi, "$1[redacted]");
+          }
+        }
+        return props;
+      },
     });
   }, []);
   return null;
@@ -31,10 +43,14 @@ function PageviewTracker() {
   const searchParams = useSearchParams();
   useEffect(() => {
     if (!posthog.__loaded || !pathname) return;
-    let url = window.origin + pathname;
-    const qs = searchParams?.toString();
-    if (qs) url += `?${qs}`;
-    posthog.capture("$pageview", { $current_url: url });
+    // Never let auth secrets (verify/reset token + email) reach analytics.
+    const sp = new URLSearchParams(searchParams?.toString() ?? "");
+    sp.delete("token");
+    sp.delete("email");
+    const qs = sp.toString();
+    posthog.capture("$pageview", {
+      $current_url: window.origin + pathname + (qs ? `?${qs}` : ""),
+    });
   }, [pathname, searchParams]);
   return null;
 }
