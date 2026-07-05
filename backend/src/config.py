@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # Geocoding
     nominatim_user_agent: str = "pricemap/0.1"
     geocode_cache_ttl: int = 86400 * 30  # 30 days
+    # Typeahead address search (Photon) per-user limit — generous, since it fires
+    # ~1 request per few keystrokes; separate from the enriched-valuation caps.
+    geocode_search_rate_limit_minute: int = 60
+    geocode_search_rate_limit_hour: int = 600
 
     # Valuation
     default_confidence_threshold: float = 30.0

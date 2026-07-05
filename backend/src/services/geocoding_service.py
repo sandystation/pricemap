@@ -1,12 +1,12 @@
 import json
 
 from geopy.adapters import AioHTTPAdapter
-from geopy.geocoders import Nominatim
+from geopy.geocoders import Nominatim, Photon
 from redis import Redis
 
 from src.config import settings
 from src.core.redis import redis_client
-from src.schemas.geocode import GeocodeResponse
+from src.schemas.geocode import GeocodeCandidate, GeocodeResponse
 
 COUNTRY_CODES = {
     "MT": "Malta",
@@ -14,6 +14,10 @@ COUNTRY_CODES = {
     "CY": "Cyprus",
     "HR": "Croatia",
 }
+
+# Malta bounding box (SW, NE) + ranking bias for typeahead search, as (lat, lon).
+MALTA_BBOX = [(35.79, 14.18), (36.09, 14.58)]
+MALTA_CENTER = (35.9, 14.45)
 
 
 class GeocodingService:
@@ -66,6 +70,70 @@ class GeocodingService:
         )
 
         return result
+
+    async def search(
+        self, q: str, country_code: str, limit: int = 6
+    ) -> list[GeocodeCandidate]:
+        """Typeahead address suggestions (Malta only) via Photon.
+
+        Photon (photon.komoot.io) is OSM-based and built for autocomplete; Nominatim's
+        usage policy forbids typeahead, so it is NOT used here. Degrades to an empty
+        list on any upstream failure so the form falls back to free-typed address.
+        """
+        country_code = country_code.upper()
+        if country_code != "MT":
+            return []  # feature is Malta-only for now
+
+        q = q.strip()
+        cache_key = f"geosearch:{country_code}:{q.lower()}:{limit}"
+        cached = await redis_client.get(cache_key)
+        if cached:
+            return [GeocodeCandidate(**c) for c in json.loads(cached)]
+
+        try:
+            async with Photon(
+                user_agent=settings.nominatim_user_agent,
+                adapter_factory=AioHTTPAdapter,
+            ) as geolocator:
+                locations = await geolocator.geocode(
+                    q,
+                    exactly_one=False,
+                    limit=limit,
+                    location_bias=MALTA_CENTER,
+                    bbox=MALTA_BBOX,
+                    timeout=8,
+                )
+        except Exception:
+            return []
+
+        candidates: list[GeocodeCandidate] = []
+        for loc in locations or []:
+            props = loc.raw.get("properties", {}) if isinstance(loc.raw, dict) else {}
+            # Belt-and-suspenders: the bbox already clips to Malta, but drop anything
+            # Photon tags with a non-MT country.
+            if str(props.get("countrycode", "")).upper() not in ("", "MT"):
+                continue
+            locality = (
+                props.get("city")
+                or props.get("town")
+                or props.get("village")
+                or props.get("county")
+            )
+            candidates.append(
+                GeocodeCandidate(
+                    lat=loc.latitude,
+                    lon=loc.longitude,
+                    display_name=loc.address,
+                    locality=locality,
+                )
+            )
+
+        await redis_client.set(
+            cache_key,
+            json.dumps([c.model_dump() for c in candidates]),
+            ex=settings.geocode_cache_ttl,
+        )
+        return candidates
 
     def geocode_sync(self, address: str, country_code: str) -> GeocodeResponse:
         """Synchronous geocode for the Celery worker (sync context).

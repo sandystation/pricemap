@@ -12,3 +12,14 @@ class GeocodeResponse(BaseModel):
     display_name: str
     locality: str | None = None
     confidence: float = Field(ge=0, le=1)
+
+
+class GeocodeCandidate(BaseModel):
+    lat: float
+    lon: float
+    display_name: str
+    locality: str | None = None
+
+
+class GeocodeSearchResponse(BaseModel):
+    results: list[GeocodeCandidate] = []

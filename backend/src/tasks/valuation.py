@@ -5,6 +5,7 @@ from typing import Any
 from src.core.celery_app import celery_app
 from src.core.telemetry import capture_event
 from src.ml.artifact_predictor import PREDICTOR
+from src.schemas.geocode import GeocodeResponse
 from src.schemas.valuation import ValuationResponse
 from src.services.geocoding_service import GeocodingService
 from src.services.llm_enrichment_service import LLMEnrichmentService
@@ -43,6 +44,22 @@ def _geocode(payload: dict[str, Any]):
     )
 
 
+def _resolve_location(payload: dict[str, Any]):
+    """Use the exact coordinates the user picked from address autocomplete when
+    present (skips a redundant geocode); otherwise geocode the free-typed address.
+    """
+    lat, lon = payload.get("lat"), payload.get("lon")
+    if lat is not None and lon is not None:
+        return GeocodeResponse(
+            lat=float(lat),
+            lon=float(lon),
+            display_name=str(payload.get("address") or ""),
+            locality=payload.get("locality"),
+            confidence=1.0,
+        )
+    return _geocode(payload)
+
+
 @celery_app.task(name="valuation.enriched")
 def process_enriched_valuation(
     job_id: str,
@@ -62,7 +79,7 @@ def process_enriched_valuation(
                 "missing_features": [],
             },
         )
-        geo = _geocode(payload)
+        geo = _resolve_location(payload)
 
         set_job_status_sync(
             job_id,
