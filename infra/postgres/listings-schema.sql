@@ -30,3 +30,22 @@ CREATE TABLE IF NOT EXISTS listings (
 
 CREATE INDEX IF NOT EXISTS ix_listings_geom ON listings USING GIST (geom);
 CREATE INDEX IF NOT EXISTS ix_listings_filter ON listings (listing_type, property_type, area_sqm);
+
+-- Staging table for the daily refresh: the CSV is COPY'd here, then swapped into
+-- `listings` inside one transaction so readers never see an empty table. Same data
+-- columns as `listings`, minus the SERIAL id and the generated geom.
+CREATE TABLE IF NOT EXISTS listings_staging (
+  external_id TEXT,
+  source TEXT,
+  listing_type TEXT,
+  property_type TEXT,
+  locality TEXT,
+  lat DOUBLE PRECISION,
+  lon DOUBLE PRECISION,
+  area_sqm DOUBLE PRECISION,
+  bedrooms INTEGER,
+  price_eur DOUBLE PRECISION,
+  price_per_sqm DOUBLE PRECISION,
+  url TEXT,
+  listing_date DATE
+);
