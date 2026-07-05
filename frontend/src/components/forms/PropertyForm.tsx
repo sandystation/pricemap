@@ -45,7 +45,6 @@ const schema = z.object({
   has_balcony: z.boolean().optional(),
   description: z
     .string()
-    .min(20, "Enter at least 20 characters")
     .max(MAX_DESCRIPTION_CHARS, `Use ${MAX_DESCRIPTION_CHARS} characters or fewer`),
 }).refine((data) => (
   data.floor === "" ||
@@ -431,13 +430,16 @@ export function PropertyForm({
       </div>
 
       <div>
-        <label className={labelClass}>Description *</label>
+        <label className={labelClass}>Description</label>
         <textarea
           {...register("description")}
           rows={5}
-          placeholder="Paste the listing-style description, including finish, views, outdoor space, parking, and location notes."
+          placeholder="Optional: paste the listing-style description (finish, views, outdoor space, parking, location notes) for a more accurate, model-enriched estimate."
           className={inputClass}
         />
+        <p className="mt-1 text-xs text-gray-400">
+          Optional — a listing-style description improves accuracy.
+        </p>
         {errors.description && (
           <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
         )}
