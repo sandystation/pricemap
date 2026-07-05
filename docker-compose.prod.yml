@@ -26,6 +26,7 @@ services:
       # Auth.js adapter schema — runs automatically only on a fresh volume.
       # For an already-initialized volume, apply it manually (see the SQL header).
       - ./infra/postgres/auth-schema.sql:/docker-entrypoint-initdb.d/10-auth-schema.sql:ro
+      - ./infra/postgres/app-schema.sql:/docker-entrypoint-initdb.d/20-app-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U casaval -d casaval"]
       interval: 10s

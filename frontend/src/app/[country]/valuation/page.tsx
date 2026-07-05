@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { AuthNav } from "@/components/AuthNav";
 import { PropertyForm } from "@/components/forms/PropertyForm";
 import { PriceCard } from "@/components/valuation/PriceCard";
 import { ComparablesList } from "@/components/valuation/ComparablesList";
@@ -37,12 +38,15 @@ export default function ValuationPage() {
           <Link href="/" className="text-2xl font-bold text-[var(--color-primary)]">
             Casaval
           </Link>
-          <Link
-            href={`/${countryKey}`}
-            className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
-          >
-            Back to {config.name} Map
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/${countryKey}`}
+              className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
+            >
+              Back to {config.name} Map
+            </Link>
+            <AuthNav />
+          </div>
         </div>
       </header>
 
