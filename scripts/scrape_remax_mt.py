@@ -7,6 +7,7 @@ No auth required. Returns structured JSON with all fields.
 """
 
 import logging
+import os
 import time
 
 import httpx
@@ -259,7 +260,7 @@ def main():
                 try:
                     record = process_property(item, raw_item=item)
 
-                    if record["image_urls"]:
+                    if record["image_urls"] and not os.environ.get("SKIP_IMAGES"):
                         record["image_local_paths"] = download_images(
                             client,
                             record["image_urls"],
