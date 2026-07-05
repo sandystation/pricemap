@@ -5,6 +5,9 @@ import { Resend } from "resend";
 // still return their generic success response (email is best-effort).
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const EMAIL_FROM = process.env.EMAIL_FROM ?? "Casaval <onboarding@resend.dev>";
+// Where replies to verification/reset emails go (e.g. hello@casaval.eu, once an
+// inbound provider forwards it). Falls back to the From address when unset.
+const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO;
 // AUTH_URL is already the public site origin in prod (https://casaval.eu).
 const APP_URL = process.env.AUTH_URL ?? process.env.APP_URL ?? "http://localhost:3000";
 
@@ -21,7 +24,13 @@ async function send(to: string, subject: string, text: string): Promise<SendResu
     return { ok: false, error: "email_not_configured" };
   }
   try {
-    const { data, error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, text });
+    const { data, error } = await resend.emails.send({
+      from: EMAIL_FROM,
+      to,
+      subject,
+      text,
+      ...(EMAIL_REPLY_TO ? { replyTo: EMAIL_REPLY_TO } : {}),
+    });
     if (error) {
       console.error("[email] Resend rejected:", error.name, error.message);
       return { ok: false, error: error.message };
