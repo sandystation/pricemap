@@ -3,6 +3,7 @@ import type { FeatureCollection } from "geojson";
 import type {
   EnrichedValuationJobResponse,
   EnrichedValuationStatusResponse,
+  GeocodeCandidate,
   GeocodeResult,
   CountryStats,
   ValuationRequest,
@@ -74,6 +75,26 @@ export const api = {
     ): Promise<GeocodeResult> {
       const params = new URLSearchParams({ address, country_code: countryCode });
       return fetchApi(`/api/v1/geocode?${params}`);
+    },
+    // Typeahead suggestions (auth-gated). Returns [] on any non-OK response
+    // (401/429/5xx) so the address field silently falls back to free text.
+    async search(
+      q: string,
+      countryCode = "MT",
+      limit = 6,
+      signal?: AbortSignal
+    ): Promise<GeocodeCandidate[]> {
+      const params = new URLSearchParams({ q, country_code: countryCode, limit: String(limit) });
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/geocode/search?${params}`, {
+          headers: await authHeader(),
+          signal,
+        });
+        if (!res.ok) return [];
+        return (await res.json()).results ?? [];
+      } catch {
+        return []; // aborted or network error
+      }
     },
   },
 

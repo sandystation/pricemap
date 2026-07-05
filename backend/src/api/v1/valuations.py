@@ -268,6 +268,17 @@ async def create_enriched_valuation(request: Request):
     if floor is not None and total_floors is not None and floor > total_floors:
         raise HTTPException(status_code=400, detail="floor must not exceed total_floors")
 
+    # Optional precise location from address autocomplete (both-or-neither). Trust
+    # only coordinates inside the Malta bbox; otherwise drop them and let the worker
+    # geocode the free-typed address as before.
+    lat = _float_value(form, "lat", ge=-90, le=90)
+    lon = _float_value(form, "lon", ge=-180, le=180)
+    picked_locality = None
+    if lat is not None and lon is not None and 35.75 <= lat <= 36.12 and 14.15 <= lon <= 14.62:
+        picked_locality = _form_value(form, "locality")
+    else:
+        lat = lon = None
+
     payload = {
         "country_code": country_code,
         "listing_type": listing_type,
@@ -289,6 +300,9 @@ async def create_enriched_valuation(request: Request):
         "has_elevator": _bool_value(form, "has_elevator"),
         "has_balcony": _bool_value(form, "has_balcony"),
         "description": description,
+        "lat": lat,
+        "lon": lon,
+        "locality": picked_locality,
         "user_id": user_id,
     }
 

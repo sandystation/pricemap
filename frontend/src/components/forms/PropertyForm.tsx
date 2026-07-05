@@ -8,6 +8,7 @@ import { api } from "@/lib/api-client";
 import { track } from "@/lib/analytics";
 import { PROPERTY_TYPES, PROPERTY_CONDITIONS } from "@/lib/constants";
 import type { PropertyCondition, ValuationResponse } from "@/lib/types";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 
 const MAX_IMAGES = 10;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -17,6 +18,10 @@ const MAX_DESCRIPTION_CHARS = 6000;
 const schema = z.object({
   listing_type: z.enum(["sale", "rent"]),
   address: z.string().min(3, "Enter at least 3 characters"),
+  // Precise coordinates + locality, captured only when a suggestion is picked.
+  lat: z.number().optional(),
+  lon: z.number().optional(),
+  locality: z.string().optional(),
   // Beta covers Malta apartments only (the enriched model + backend accept
   // apartment only); the selector is likewise limited to apartment.
   property_type: z.enum(["apartment"]),
@@ -111,6 +116,7 @@ export function PropertyForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -146,6 +152,9 @@ export function PropertyForm({
       append("country_code", countryCode);
       append("listing_type", data.listing_type);
       append("address", data.address);
+      append("lat", data.lat);
+      append("lon", data.lon);
+      append("locality", data.locality);
       append("property_type", data.property_type);
       append("area_sqm", data.area_sqm);
       append("floor", data.floor);
@@ -275,11 +284,23 @@ export function PropertyForm({
 
       {/* Address */}
       <div>
-        <label className={labelClass}>Address *</label>
-        <input
-          {...register("address")}
-          placeholder="e.g. 123 Republic Street, Valletta"
-          className={inputClass}
+        <label className={labelClass} htmlFor="address">Address *</label>
+        <AddressAutocomplete
+          id="address"
+          value={watch("address") || ""}
+          countryCode={countryCode}
+          placeholder="Start typing a Malta address…"
+          onChangeText={(t) => setValue("address", t, { shouldValidate: true })}
+          onSelect={(c) => {
+            setValue("lat", c.lat);
+            setValue("lon", c.lon);
+            setValue("locality", c.locality ?? undefined);
+          }}
+          onClearCoords={() => {
+            setValue("lat", undefined);
+            setValue("lon", undefined);
+            setValue("locality", undefined);
+          }}
         />
         {errors.address && (
           <p className="mt-1 text-xs text-red-500">{errors.address.message}</p>

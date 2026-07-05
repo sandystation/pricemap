@@ -75,6 +75,13 @@ export interface GeocodeResult {
   confidence: number;
 }
 
+export interface GeocodeCandidate {
+  lat: number;
+  lon: number;
+  display_name: string;
+  locality: string | null;
+}
+
 export interface CountryStats {
   country_code: string;
   total_properties: number;
