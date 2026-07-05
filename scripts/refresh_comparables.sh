@@ -39,6 +39,8 @@ log "5/5 atomic reload into VM PostGIS"
 ssh hetzner "cd /root/pricemap && $DC -c 'TRUNCATE listings_staging'"
 ssh hetzner "cd /root/pricemap && $DC -c \"COPY listings_staging ($COLS) FROM STDIN WITH (FORMAT csv, HEADER true)\"" < "$CSV"
 ssh hetzner "cd /root/pricemap && $DC -c 'BEGIN; TRUNCATE listings; INSERT INTO listings ($COLS) SELECT $COLS FROM listings_staging; COMMIT;'"
+# Refresh planner stats after the bulk reload so the GiST/btree indexes are used.
+ssh hetzner "cd /root/pricemap && $DC -c 'ANALYZE listings;'"
 N=$(ssh hetzner "cd /root/pricemap && $DC -tAc 'SELECT count(*) FROM listings'")
 
 log "done — listings reloaded, $N rows"
