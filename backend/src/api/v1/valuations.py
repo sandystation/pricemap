@@ -231,11 +231,8 @@ async def create_enriched_valuation(request: Request):
         )
     if listing_type not in {"sale", "rent"}:
         raise HTTPException(status_code=400, detail="listing_type must be sale or rent")
-    if len(description) < 20:
-        raise HTTPException(
-            status_code=400,
-            detail="Description must be at least 20 characters for LLM enrichment",
-        )
+    # Description is optional. When present it drives LLM enrichment; when empty the
+    # worker skips enrichment and the model uses structured features only.
     if len(description) > settings.valuation_description_max_chars:
         raise HTTPException(
             status_code=400,

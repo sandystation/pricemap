@@ -92,7 +92,17 @@ def process_enriched_valuation(
                 "missing_features": [],
             },
         )
-        enriched = LLMEnrichmentService().enrich(payload, image_paths)
+        # LLM enrichment is best-effort: skip it when there's nothing to enrich
+        # (no description + no images), and never let an enrichment failure fail
+        # the valuation — the model handles missing llm_* features as NaN.
+        description = str(payload.get("description") or "").strip()
+        if description or image_paths:
+            try:
+                enriched = LLMEnrichmentService().enrich(payload, image_paths)
+            except Exception:
+                enriched = {}
+        else:
+            enriched = {}
 
         set_job_status_sync(
             job_id,
