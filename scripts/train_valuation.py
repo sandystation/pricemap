@@ -63,8 +63,11 @@ XGB_PARAMS = {
     "early_stopping_rounds": 50,
 }
 
-LGBM_WEIGHT = 0.7
-XGB_WEIGHT = 0.3
+# LGB-heavy: XGB reads locality_enc as a raw ordinal (no enable_categorical), which
+# over-amplifies on premium/sparse inputs. Until XGB uses native categoricals, keep
+# its weight low. See docs/model-metrics.md.
+LGBM_WEIGHT = 0.85
+XGB_WEIGHT = 0.15
 N_FOLDS = 5
 
 # ---------------------------------------------------------------------------
