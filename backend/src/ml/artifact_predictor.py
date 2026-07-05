@@ -72,6 +72,12 @@ LLM_MAPPED_FEATURES = {
 }
 
 
+# Training-typical values (medians over clean Malta apartment-sale rows) for
+# structural features the public form may omit. total_int_area is imputed from
+# area_sqm separately (they're near-identical for apartments).
+_STRUCT_IMPUTE = {"total_ext_area": 10.0, "rooms": 6.0, "bathrooms": 2.0, "bedrooms": 2.0}
+
+
 def _artifact_dir() -> Path:
     configured = Path(settings.model_artifacts_dir)
     if configured.exists():
@@ -240,6 +246,20 @@ class ArtifactValuationPredictor:
             if required in values and (values[required] is None or np.isnan(values[required])):
                 missing.append(required)
 
+        # Serve-time imputation. The public form omits features the model was
+        # trained WITH (~always present in training), so raw NaN is out-of-distribution
+        # and biases the trees high — the model is well-calibrated on complete inputs
+        # and collapses on sparse ones. Fill missing STRUCTURAL features with
+        # training-typical values so a sparse input lands in the normal operating range.
+        def _is_nan(v: Any) -> bool:
+            return v is None or (isinstance(v, float) and math.isnan(v))
+
+        if _is_nan(values.get("total_int_area")) and area and not math.isnan(area):
+            values["total_int_area"] = area  # internal area ~= total for apartments
+        for feat, default in _STRUCT_IMPUTE.items():
+            if feat in values and _is_nan(values[feat]):
+                values[feat] = default
+
         vector = np.array([values[name] for name in feature_names], dtype=np.float64)
         return vector.reshape(1, -1), missing, feature_names
 
@@ -260,8 +280,13 @@ class ArtifactValuationPredictor:
             + float(weights.get("xgb", 0.3)) * loaded["xgb"].predict(x)[0]
         )
         estimate = float(np.exp(pred_log))
+        # Asking -> transaction adjustment (listings are asking prices).
+        country = str(payload.get("country_code", "MT")).upper()
+        estimate *= float(settings.adjustment_factors.get(country, 1.0))
         mape = float(loaded["meta"].get("cv_metrics", {}).get("mape_pct", 20.0)) / 100
-        band = max(mape * 1.25, 0.12)
+        # Feature-aware band: widen for sparse inputs (each missing high-impact
+        # feature adds uncertainty), so the range is honest rather than falsely tight.
+        band = min(max(mape * 1.25, 0.12) + 0.02 * len(missing), 0.45)
 
         importances = loaded["meta"].get("feature_importance", {})
         total_importance = sum(float(v) for v in importances.values()) or 1.0

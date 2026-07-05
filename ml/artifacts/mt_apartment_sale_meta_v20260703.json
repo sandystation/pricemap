@@ -8,8 +8,8 @@
   "median_price": 371000.0,
   "target_transform": "log",
   "ensemble_weights": {
-    "lgb": 0.7,
-    "xgb": 0.3
+    "lgb": 0.85,
+    "xgb": 0.15
   },
   "feature_names": [
     "lat",
