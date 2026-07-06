@@ -3,32 +3,122 @@ import styles from "./professional-beta.module.css";
 
 type BenefitIconName = "comps" | "price" | "caveats";
 
+const HERO = {
+  eyebrow: "Malta · Private beta",
+  titleLead: "Comparable evidence for Malta property,",
+  titleAccent: "in minutes — not weeks.",
+  sub: "Casaval finds nearby comparables, a defensible price range, and the caveats behind them — first-pass market evidence for periti, valuers, and buyer-side agents.",
+};
+
+const HERO_STATS = [
+  { value: "11.8%", label: "Typical error on sales (MAPE)" },
+  { value: "36K+", label: "Malta listings behind each estimate" },
+  { value: "Seconds", label: "For a first pass, vs 1–2 weeks manual" },
+];
+
+const POSITIONING = {
+  lede: "Manual valuations take 1–2 weeks and €250–700. Casaval gives you a defensible first pass in minutes — so you can price, advise, and shortlist faster.",
+  who: "Built for Malta periti, valuers, buyer-side agents, and small agencies.",
+};
+
+const STEPS = [
+  {
+    title: "Enter the property",
+    body: "Type a Malta address with autocomplete and add the basics — area, type, condition. A listing description or photos sharpen the result.",
+  },
+  {
+    title: "We find the comparables",
+    body: "Casaval matches nearby listings by distance, size, and type, then runs a model trained on thousands of local sales.",
+  },
+  {
+    title: "Review the evidence",
+    body: "Get a price range, a confidence level, the comps behind it, and clear caveats — ready for your professional judgment.",
+  },
+];
+
 const BENEFITS = [
   {
     icon: "comps",
-    title: "Find comps",
-    detail: "Nearby listings",
+    title: "Ranked comparables",
+    body: "Nearby listings ranked by distance, size, and type — each with €/sqm, so the local market reads at a glance.",
   },
   {
     icon: "price",
-    title: "Check price",
-    detail: "Range + EUR/sqm",
+    title: "A defensible range",
+    body: "A price range and confidence level from a LightGBM + XGBoost ensemble trained on thousands of Malta listings.",
   },
   {
     icon: "caveats",
-    title: "Flag caveats",
-    detail: "Weak matches",
+    title: "Caveats, not black boxes",
+    body: "Every output flags weak matches and missing data, so your professional judgment stays in charge.",
   },
-] satisfies Array<{
-  icon: BenefitIconName;
-  title: string;
-  detail: string;
-}>;
+] satisfies Array<{ icon: BenefitIconName; title: string; body: string }>;
 
-const LIMITATION_BADGES = [
-  "Not formal",
-  "Not bank-grade",
+const ACCURACY = {
+  kicker: "Built to be trusted",
+  title: "Transparent by design.",
+  body: "Casaval is a decision-support tool, not a regulatory one — so it shows its work. Estimates come from a spatially cross-validated ensemble, and every report scores its own confidence and lists the comparables and features behind it.",
+  points: [
+    "LightGBM + XGBoost ensemble on a log-price target",
+    "Spatial cross-validation — no leakage across neighbourhoods",
+    "Confidence score, with a wider range when inputs are sparse",
+    "Built on RE/MAX Malta and MaltaPark listing data",
+  ],
+};
+
+const ACCURACY_STATS = [
+  { value: "11.8%", label: "Typical error on sales (MAPE)" },
+  { value: "36K+", label: "Malta listings in the model" },
+  { value: "5-fold", label: "Spatial cross-validation" },
+  { value: "5–10", label: "Comparables per report" },
 ];
+
+const HONESTY = {
+  kicker: "Straight about the limits",
+  title: "What Casaval is — and isn't.",
+  is: [
+    "Fast comparable evidence for a property",
+    "A defensible first-pass price range",
+    "A transparent starting point for your own analysis",
+  ],
+  isnt: [
+    "A formal Perit valuation",
+    "A bank or mortgage valuation",
+    "A replacement for professional judgment",
+  ],
+};
+
+const FAQ = [
+  {
+    q: "Is this a formal valuation?",
+    a: "No. Casaval is decision-support — fast comparable evidence and a first-pass range. It doesn't replace a Perit valuation, a bank valuation, or your professional judgment.",
+  },
+  {
+    q: "Where does the data come from?",
+    a: "Public Malta property listings — currently RE/MAX Malta and MaltaPark, tens of thousands of records refreshed regularly. It's listing data, not closed-transaction data.",
+  },
+  {
+    q: "How accurate is it?",
+    a: "On Malta sales, the model's typical error is about 11.8% (MAPE) under spatial cross-validation. Every report also scores its own confidence and widens the range when inputs are sparse.",
+  },
+  {
+    q: "Who is it for?",
+    a: "Malta property professionals — periti, valuers, buyer-side agents, and small agencies who want a faster first pass and a comparable set to work from.",
+  },
+  {
+    q: "What does it cost?",
+    a: "It's free during the private beta. We're onboarding a small group of Malta professionals and using their feedback to shape what comes next.",
+  },
+];
+
+const FINAL_CTA = {
+  kicker: "Private beta",
+  title: "Try one real case.",
+  sub: "Free during the private beta — now onboarding Malta professionals.",
+};
+
+const FOOTER_DISCLAIMER =
+  "Casaval provides listing-data valuation support based on comparable properties, location, and property features. It is not a formal Perit valuation, a bank valuation, legal advice, or a substitute for professional judgment.";
 
 function BenefitIcon({ name }: { name: BenefitIconName }) {
   if (name === "comps") {
@@ -39,7 +129,6 @@ function BenefitIcon({ name }: { name: BenefitIconName }) {
       </svg>
     );
   }
-
   if (name === "price") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -48,12 +137,27 @@ function BenefitIcon({ name }: { name: BenefitIconName }) {
       </svg>
     );
   }
-
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 4 21 19H3L12 4Z" />
       <path d="M12 9v4.5" />
       <path d="M12 16.8h.01" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg className={styles.markIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function CrossIcon() {
+  return (
+    <svg className={styles.markIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M18 6 6 18M6 6l12 12" />
     </svg>
   );
 }
@@ -67,11 +171,20 @@ export default function MaltaProfessionalBetaPage() {
             Casaval
           </Link>
           <nav className={styles.nav}>
+            <a href="#how" className={styles.navLink}>
+              How it works
+            </a>
+            <a href="#accuracy" className={styles.navLink}>
+              Accuracy
+            </a>
             <Link href="/mt" className={styles.navLink}>
-              Malta Map
+              Malta map
             </Link>
-            <Link href="/mt/valuation" className={styles.navButton}>
-              Run Analysis
+            <Link href="/login" className={styles.signIn}>
+              Sign in
+            </Link>
+            <Link href="/signup" className={styles.navButton}>
+              Run your first case
             </Link>
           </nav>
         </div>
@@ -82,24 +195,35 @@ export default function MaltaProfessionalBetaPage() {
           <div className={styles.heroCopy}>
             <div className={styles.eyebrow}>
               <span className={styles.statusDot} />
-              Malta professional beta
+              {HERO.eyebrow}
             </div>
-            <h1>Faster Malta property comps</h1>
-            <p>
-              Paste a listing. Get a price range, nearby comps, and caveats for
-              review.
-            </p>
+            <h1>
+              {HERO.titleLead}{" "}
+              <span className={styles.heroAccent}>{HERO.titleAccent}</span>
+            </h1>
+            <p>{HERO.sub}</p>
             <div className={styles.actions}>
-              <Link href="/mt/valuation" className={styles.primaryAction}>
-                Try One Case
+              <Link href="/signup" className={styles.primaryAction}>
+                Run your first case
               </Link>
               <Link href="/mt" className={styles.secondaryAction}>
-                View Map
+                See the Malta map
               </Link>
             </div>
+            <dl className={styles.trustRow}>
+              {HERO_STATS.map((stat) => (
+                <div key={stat.label} className={styles.trustItem}>
+                  <dt className={styles.trustNum}>{stat.value}</dt>
+                  <dd className={styles.trustLabel}>{stat.label}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          <aside className={styles.reportPreview} aria-label="Illustrative evidence pack preview">
+          <aside
+            className={styles.reportPreview}
+            aria-label="Illustrative evidence pack preview"
+          >
             <div className={styles.reportTopbar}>
               <span />
               <span />
@@ -122,7 +246,7 @@ export default function MaltaProfessionalBetaPage() {
             <div className={styles.rangePanel}>
               <div>
                 <span>Range</span>
-                <strong>EUR 510k-590k</strong>
+                <strong>€510k–590k</strong>
               </div>
               <div className={styles.confidence}>
                 <span>Confidence</span>
@@ -145,50 +269,159 @@ export default function MaltaProfessionalBetaPage() {
             <div className={styles.compChips}>
               <span>8 comps</span>
               <span>420 m nearest</span>
-              <span>EUR/sqm view</span>
+              <span>€/sqm view</span>
             </div>
           </aside>
         </div>
       </section>
 
-      <section className={styles.lowerSection}>
-        <div className={styles.benefitIntro}>
-          <p className={styles.kicker}>Why join</p>
-          <h2>Know the price faster.</h2>
+      <section className={styles.positioning}>
+        <div className={styles.positioningInner}>
+          <p className={styles.positioningLede}>{POSITIONING.lede}</p>
+          <p className={styles.positioningWho}>{POSITIONING.who}</p>
         </div>
+      </section>
 
-        <div className={styles.benefitGrid}>
-          {BENEFITS.map((item) => (
-            <article key={item.title} className={styles.benefitCard}>
-              <div className={styles.benefitMain}>
+      <section id="how" className={styles.section}>
+        <div className={styles.sectionInner}>
+          <p className={styles.kicker}>How it works</p>
+          <h2 className={styles.sectionTitle}>
+            From address to evidence in three steps.
+          </h2>
+          <ol className={styles.steps}>
+            {STEPS.map((step, index) => (
+              <li key={step.title} className={styles.step}>
+                <span className={styles.stepNum}>{index + 1}</span>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionInner}>
+          <p className={styles.kicker}>Why professionals use it</p>
+          <h2 className={styles.sectionTitle}>
+            Evidence you can put in front of a client.
+          </h2>
+          <div className={styles.benefitGrid}>
+            {BENEFITS.map((item) => (
+              <article key={item.title} className={styles.benefitCard}>
                 <span className={styles.benefitIcon}>
                   <BenefitIcon name={item.icon} />
                 </span>
                 <h3>{item.title}</h3>
-              </div>
-              <span className={styles.benefitTag}>{item.detail}</span>
-            </article>
-          ))}
-        </div>
-
-        <div className={styles.finalCta}>
-          <div>
-            <p>Private beta</p>
-            <h2>Try one real case.</h2>
-            <span>5 Malta professionals. Listing-data support only.</span>
+                <p>{item.body}</p>
+              </article>
+            ))}
           </div>
-          <Link href="/mt/valuation" className={styles.primaryAction}>
-            Try One Case
-          </Link>
-        </div>
-
-        <div className={styles.disclaimerLine}>
-          <span>For review support.</span>
-          {LIMITATION_BADGES.map((badge) => (
-            <strong key={badge}>{badge}</strong>
-          ))}
         </div>
       </section>
+
+      <section id="accuracy" className={styles.accuracy}>
+        <div className={styles.accuracyInner}>
+          <div className={styles.accuracyCopy}>
+            <p className={styles.kicker}>{ACCURACY.kicker}</p>
+            <h2 className={styles.sectionTitle}>{ACCURACY.title}</h2>
+            <p className={styles.accuracyLede}>{ACCURACY.body}</p>
+            <ul className={styles.methodList}>
+              {ACCURACY.points.map((point) => (
+                <li key={point}>
+                  <CheckIcon />
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <dl className={styles.statGrid}>
+            {ACCURACY_STATS.map((stat) => (
+              <div key={stat.label} className={styles.statCard}>
+                <dt>{stat.value}</dt>
+                <dd>{stat.label}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      <section className={styles.honesty}>
+        <div className={styles.honestyInner}>
+          <p className={styles.kicker}>{HONESTY.kicker}</p>
+          <h2 className={styles.sectionTitle}>{HONESTY.title}</h2>
+          <div className={styles.honestyCols}>
+            <div className={`${styles.honestyCard} ${styles.honestyIs}`}>
+              <h3>What it is</h3>
+              <ul>
+                {HONESTY.is.map((item) => (
+                  <li key={item}>
+                    <CheckIcon />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className={`${styles.honestyCard} ${styles.honestyIsnt}`}>
+              <h3>What it isn&apos;t</h3>
+              <ul>
+                {HONESTY.isnt.map((item) => (
+                  <li key={item}>
+                    <CrossIcon />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.faq}>
+        <div className={styles.faqInner}>
+          <p className={styles.kicker}>Questions</p>
+          <h2 className={styles.sectionTitle}>Good to know.</h2>
+          <div className={styles.faqList}>
+            {FAQ.map((item) => (
+              <details key={item.q} className={styles.faqItem}>
+                <summary>
+                  {item.q}
+                  <span className={styles.faqMarker} aria-hidden="true" />
+                </summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.finalCta}>
+        <div className={styles.finalCtaInner}>
+          <div>
+            <p className={styles.finalKicker}>{FINAL_CTA.kicker}</p>
+            <h2>{FINAL_CTA.title}</h2>
+            <span>{FINAL_CTA.sub}</span>
+          </div>
+          <Link href="/signup" className={styles.finalAction}>
+            Run your first case
+          </Link>
+        </div>
+      </section>
+
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <div className={styles.footerBrandCol}>
+            <span className={styles.footerBrand}>Casaval</span>
+            <p className={styles.footerDisclaimer}>{FOOTER_DISCLAIMER}</p>
+          </div>
+          <nav className={styles.footerNav}>
+            <Link href="/mt">Malta map</Link>
+            <Link href="/mt/valuation">Run a case</Link>
+            <Link href="/login">Sign in</Link>
+            <a href="mailto:hello@casaval.eu">Contact</a>
+          </nav>
+        </div>
+      </footer>
     </main>
   );
 }
