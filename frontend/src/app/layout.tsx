@@ -1,11 +1,39 @@
 import type { Metadata } from "next";
+import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
+// Self-hosted at build time (no runtime request to Google). Fraunces is the
+// characterful display serif; Inter carries body/UI. Exposed as CSS variables
+// so the landing can use Fraunces for display while the app keeps Inter as its
+// default body face.
+const display = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
+const body = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Casaval - Property Analysis",
+  metadataBase: new URL("https://casaval.eu"),
+  title: {
+    default: "Casaval — Comparable property evidence for Malta",
+    template: "%s · Casaval",
+  },
   description:
-    "Comparable-property analysis and valuation support for underserved EU markets",
+    "Casaval finds nearby comparables, a defensible price range, and the caveats behind them — first-pass market evidence for Malta periti, valuers, and buyer-side agents.",
+  openGraph: {
+    title: "Casaval — Comparable property evidence for Malta",
+    description:
+      "Nearby comparables, a defensible price range, and the caveats behind them. First-pass market evidence for Malta property professionals.",
+    siteName: "Casaval",
+    type: "website",
+    locale: "en_MT",
+  },
 };
 
 export default function RootLayout({
@@ -14,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${display.variable} ${body.variable}`}>
       <head>
         <link
           rel="stylesheet"
