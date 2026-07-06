@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppHeader } from "@/components/AppHeader";
 
 const COUNTRIES = [
   {
@@ -35,17 +36,10 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-[var(--color-border)] px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <h1 className="text-2xl font-bold text-[var(--color-primary)]">
-            Casaval
-          </h1>
-          <nav className="flex gap-4 text-sm text-[var(--color-text-secondary)]">
-            <span>About</span>
-            <span>API</span>
-          </nav>
-        </div>
-      </header>
+      <AppHeader>
+        <span className="text-[var(--color-text-secondary)]">About</span>
+        <span className="text-[var(--color-text-secondary)]">API</span>
+      </AppHeader>
 
       {/* Hero */}
       <section className="px-6 py-20 text-center">
@@ -55,9 +49,9 @@ export default function Home() {
           EU Markets
         </h2>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--color-text-secondary)]">
-          Get instant, data-driven property valuations for markets where
-          automated tools don&apos;t exist. Powered by local listing data,
-          comparable analysis, and machine learning.
+          Instant, data-driven property valuations for markets where automated
+          tools don&apos;t exist — built on local listing data and
+          comparable-property analysis.
         </p>
       </section>
 
@@ -74,7 +68,7 @@ export default function Home() {
               <CardWrapper
                 key={country.code}
                 href={isActive ? `/${country.code}` : "#"}
-                className={`rounded-xl border border-[var(--color-border)] p-6 transition-all ${
+                className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 transition-all ${
                   isActive
                     ? "cursor-pointer hover:border-[var(--color-primary)] hover:shadow-lg"
                     : "cursor-not-allowed opacity-60"
@@ -88,8 +82,8 @@ export default function Home() {
                 <span
                   className={`mt-4 inline-block rounded-full px-3 py-1 text-xs font-medium ${
                     isActive
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-600"
+                      ? "bg-[var(--color-success-bg)] text-[var(--color-success)]"
+                      : "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]"
                   }`}
                 >
                   {country.status}

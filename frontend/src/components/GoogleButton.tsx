@@ -13,7 +13,7 @@ export function GoogleButton({ callbackUrl }: { callbackUrl: string }) {
         track("login_clicked", { provider: "google" });
         signIn("google", { callbackUrl });
       }}
-      className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+      className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-bg-secondary)]"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09Z" />
@@ -31,7 +31,7 @@ export function OrDivider() {
   return (
     <div className="flex items-center gap-3">
       <span className="h-px flex-1 bg-[var(--color-border)]" />
-      <span className="text-xs uppercase tracking-wide text-gray-400">or</span>
+      <span className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">or</span>
       <span className="h-px flex-1 bg-[var(--color-border)]" />
     </div>
   );

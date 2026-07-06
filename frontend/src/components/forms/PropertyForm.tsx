@@ -221,7 +221,7 @@ export function PropertyForm({
               result: enriched,
             }),
           }).catch(() => {});
-          setStatusMessage("Model-backed valuation complete");
+          setStatusMessage("Valuation complete");
           return;
         }
       }
@@ -244,13 +244,13 @@ export function PropertyForm({
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-6 rounded-xl border border-[var(--color-border)] p-6"
+      className="space-y-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
     >
       <div>
-        <h3 className="text-lg font-semibold">Property Details</h3>
+        <h3 className="text-lg font-semibold">Property details</h3>
         <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-          Add the same facts, description, and photos a listing would use for
-          model-backed enrichment.
+          Add the same facts, description, and photos a listing would include —
+          the more you add, the sharper the estimate.
         </p>
       </div>
 
@@ -265,7 +265,7 @@ export function PropertyForm({
               key={item.value}
               className={`flex cursor-pointer items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
                 listingType === item.value
-                  ? "bg-[var(--color-bg)] text-[var(--color-primary)] shadow-sm"
+                  ? "bg-[var(--color-surface)] text-[var(--color-primary)] shadow-sm"
                   : "text-[var(--color-text-secondary)]"
               }`}
             >
@@ -302,7 +302,7 @@ export function PropertyForm({
           }}
         />
         {errors.address && (
-          <p className="mt-1 text-xs text-red-500">{errors.address.message}</p>
+          <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.address.message}</p>
         )}
       </div>
 
@@ -317,7 +317,7 @@ export function PropertyForm({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-gray-400">Malta apartments (beta)</p>
+          <p className="mt-1 text-xs text-[var(--color-text-secondary)]">Malta apartments (beta)</p>
         </div>
         <div>
           <label className={labelClass}>Area (m²) *</label>
@@ -328,7 +328,7 @@ export function PropertyForm({
             className={inputClass}
           />
           {errors.area_sqm && (
-            <p className="mt-1 text-xs text-red-500">
+            <p className="mt-1 text-xs text-[var(--color-danger)]">
               {errors.area_sqm.message}
             </p>
           )}
@@ -434,14 +434,14 @@ export function PropertyForm({
         <textarea
           {...register("description")}
           rows={5}
-          placeholder="Optional: paste the listing-style description (finish, views, outdoor space, parking, location notes) for a more accurate, model-enriched estimate."
+          placeholder="Optional: paste the listing-style description (finish, views, outdoor space, parking, location notes) for a more accurate estimate."
           className={inputClass}
         />
-        <p className="mt-1 text-xs text-gray-400">
+        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
           Optional — a listing-style description improves accuracy.
         </p>
         {errors.description && (
-          <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>
+          <p className="mt-1 text-xs text-[var(--color-danger)]">{errors.description.message}</p>
         )}
       </div>
 
@@ -481,13 +481,13 @@ export function PropertyForm({
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <div className="rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger-bg)] p-3 text-sm text-[var(--color-danger)]">
           {error}
         </div>
       )}
 
       {statusMessage && (
-        <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-info-bg)] p-3 text-sm text-[var(--color-primary)]">
           {statusMessage}
         </div>
       )}
@@ -498,7 +498,7 @@ export function PropertyForm({
         disabled={loading}
         className="w-full rounded-lg bg-[var(--color-primary)] py-3 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
       >
-        {loading ? "Running Enrichment..." : "Run Model-Backed Valuation"}
+        {loading ? "Estimating…" : "Run valuation"}
       </button>
     </form>
   );

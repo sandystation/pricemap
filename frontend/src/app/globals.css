@@ -1,25 +1,48 @@
 @import "tailwindcss";
 
+/* Casaval "Mediterranean editorial" theme — warm limestone grounds, warm-white
+   card surfaces, harbour-blue primary, sea-teal + terracotta accents. Every
+   app surface is driven by these variables, so the palette lives in one place.
+   The landing page (mt/professional-beta) uses its own scoped module vars. */
 :root {
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
-  --color-success: #16a34a;
-  --color-warning: #d97706;
-  --color-danger: #dc2626;
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-text: #0f172a;
-  --color-text-secondary: #64748b;
-  --color-border: #e2e8f0;
+  --color-primary: #1e5f8c; /* harbour — buttons, links, wordmark */
+  --color-primary-dark: #164863;
+  --color-accent: #c8642d; /* terracotta — reserved accent */
+  --color-accent-dark: #a94f1f;
+  --color-success: #1e8577; /* deep teal */
+  --color-warning: #b26b26;
+  --color-danger: #c0392b;
+
+  --color-bg: #f4ede1; /* limestone ground + input fills */
+  --color-surface: #fcfaf4; /* warm-white cards */
+  --color-bg-secondary: #ebe1cf; /* deeper limestone — toggles/hover/selected/track */
+  --color-text: #14212e; /* ink */
+  --color-text-secondary: #54606b;
+  --color-border: #e4dac8; /* warm sand */
+
+  /* Soft banner tints — color-mix re-resolves against the vars above, so these
+     adapt automatically in dark mode without a separate declaration. */
+  --color-danger-bg: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+  --color-success-bg: color-mix(in srgb, var(--color-success) 14%, var(--color-surface));
+  --color-info-bg: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #0f172a;
-    --color-bg-secondary: #1e293b;
-    --color-text: #f8fafc;
-    --color-text-secondary: #94a3b8;
-    --color-border: #334155;
+    --color-primary: #3e86b0; /* lighter harbour — legible on dark, white-text-safe */
+    --color-primary-dark: #5aa6ce;
+    --color-accent: #e07b43;
+    --color-accent-dark: #c8642d;
+    --color-success: #46b9aa;
+    --color-warning: #e0a24a;
+    --color-danger: #e06b5e;
+
+    --color-bg: #141c24;
+    --color-surface: #1b2530;
+    --color-bg-secondary: #24303b;
+    --color-text: #f1ede3;
+    --color-text-secondary: #a9b2bb;
+    --color-border: #2c3a46;
   }
 }
 
@@ -37,4 +60,12 @@ body {
   font-family: var(--font-body), system-ui, -apple-system, sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
+}
+
+/* Display headings (page titles + auth wordmarks) use the serif; smaller UI
+   headings (h3+) stay Inter. The landing sets its own font per element. */
+h1,
+h2 {
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.01em;
 }

@@ -11,7 +11,7 @@ const HERO = {
 };
 
 const HERO_STATS = [
-  { value: "11.8%", label: "Typical error on sales (MAPE)" },
+  { value: "~12%", label: "Typical margin vs sale price" },
   { value: "36K+", label: "Malta listings behind each estimate" },
   { value: "Seconds", label: "For a first pass, vs 1–2 weeks manual" },
 ];
@@ -45,7 +45,7 @@ const BENEFITS = [
   {
     icon: "price",
     title: "A defensible range",
-    body: "A price range and confidence level from a LightGBM + XGBoost ensemble trained on thousands of Malta listings.",
+    body: "A price range and confidence level, learned from thousands of recent Malta sales.",
   },
   {
     icon: "caveats",
@@ -57,20 +57,20 @@ const BENEFITS = [
 const ACCURACY = {
   kicker: "Built to be trusted",
   title: "Transparent by design.",
-  body: "Casaval is a decision-support tool, not a regulatory one — so it shows its work. Estimates come from a spatially cross-validated ensemble, and every report scores its own confidence and lists the comparables and features behind it.",
+  body: "Casaval is a decision-support tool, not a regulatory one — so it shows its work. Estimates are trained and tested on thousands of real Malta sales, and every report scores its own confidence and lists the comparables and features behind it.",
   points: [
-    "LightGBM + XGBoost ensemble on a log-price target",
-    "Spatial cross-validation — no leakage across neighbourhoods",
-    "Confidence score, with a wider range when inputs are sparse",
-    "Built on RE/MAX Malta and MaltaPark listing data",
+    "Trained on thousands of recent Malta sales",
+    "Tested against actual sale prices across every locality",
+    "A confidence score, with a wider range when details are missing",
+    "Built on live Malta listings, refreshed regularly",
   ],
 };
 
 const ACCURACY_STATS = [
-  { value: "11.8%", label: "Typical error on sales (MAPE)" },
-  { value: "36K+", label: "Malta listings in the model" },
-  { value: "5-fold", label: "Spatial cross-validation" },
+  { value: "~12%", label: "Typical margin vs sale price" },
+  { value: "36K+", label: "Malta listings analysed" },
   { value: "5–10", label: "Comparables per report" },
+  { value: "Daily", label: "Listings refreshed" },
 ];
 
 const HONESTY = {
@@ -99,7 +99,7 @@ const FAQ = [
   },
   {
     q: "How accurate is it?",
-    a: "On Malta sales, the model's typical error is about 11.8% (MAPE) under spatial cross-validation. Every report also scores its own confidence and widens the range when inputs are sparse.",
+    a: "On recent Malta sales, our estimates land within about 12% of the eventual sale price on average. Every report also shows a confidence level and widens the range when key details are missing.",
   },
   {
     q: "Who is it for?",

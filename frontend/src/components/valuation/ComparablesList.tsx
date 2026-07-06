@@ -15,7 +15,7 @@ const formatEur = (value: number) =>
 
 export function ComparablesList({ comparables }: ComparablesListProps) {
   return (
-    <div className="rounded-xl border border-[var(--color-border)] p-6">
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
       <h4 className="mb-1 text-sm font-semibold">
         Comparable listings ({comparables.length})
       </h4>
@@ -29,7 +29,7 @@ export function ComparablesList({ comparables }: ComparablesListProps) {
             href={comp.url ?? undefined}
             target={comp.url ? "_blank" : undefined}
             rel={comp.url ? "noopener noreferrer" : undefined}
-            className={`flex items-center justify-between rounded-lg border border-[var(--color-border)] p-3 ${
+            className={`flex items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-3 ${
               comp.url ? "transition hover:border-[var(--color-primary)]" : "cursor-default"
             }`}
           >

@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { AppHeader } from "@/components/AppHeader";
 import { AuthNav } from "@/components/AuthNav";
 import { PropertyForm } from "@/components/forms/PropertyForm";
 import { PriceCard } from "@/components/valuation/PriceCard";
@@ -33,22 +34,15 @@ export default function ValuationPage() {
 
   return (
     <main className="min-h-screen">
-      <header className="border-b border-[var(--color-border)] px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-[var(--color-primary)]">
-            Casaval
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/${countryKey}`}
-              className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
-            >
-              Back to {config.name} Map
-            </Link>
-            <AuthNav />
-          </div>
-        </div>
-      </header>
+      <AppHeader>
+        <Link
+          href={`/${countryKey}`}
+          className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
+        >
+          Back to {config.name} Map
+        </Link>
+        <AuthNav />
+      </AppHeader>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-8">

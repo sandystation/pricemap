@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { AppHeader } from "@/components/AppHeader";
 import { AuthNav } from "@/components/AuthNav";
 import { PriceCard } from "@/components/valuation/PriceCard";
 import type { ValuationResponse } from "@/lib/types";
@@ -59,22 +60,15 @@ export default function HistoryPage() {
 
   return (
     <main className="min-h-screen">
-      <header className="border-b border-[var(--color-border)] px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-[var(--color-primary)]">
-            Casaval
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/mt/valuation"
-              className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
-            >
-              New valuation
-            </Link>
-            <AuthNav />
-          </div>
-        </div>
-      </header>
+      <AppHeader>
+        <Link
+          href="/mt/valuation"
+          className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
+        >
+          New valuation
+        </Link>
+        <AuthNav />
+      </AppHeader>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
         <h2 className="text-3xl font-bold">Your valuations</h2>
@@ -91,7 +85,7 @@ export default function HistoryPage() {
               <p className="text-sm text-[var(--color-text-secondary)]">Loading…</p>
             )}
             {items?.length === 0 && (
-              <div className="rounded-xl border border-[var(--color-border)] p-6 text-sm text-[var(--color-text-secondary)]">
+              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-sm text-[var(--color-text-secondary)]">
                 No saved valuations yet.{" "}
                 <Link href="/mt/valuation" className="text-[var(--color-primary)] hover:underline">
                   Run your first one
@@ -106,8 +100,8 @@ export default function HistoryPage() {
                 onClick={() => view(v.id)}
                 className={`w-full rounded-xl border p-4 text-left transition hover:border-[var(--color-primary)] ${
                   selected?.id === v.id
-                    ? "border-[var(--color-primary)] bg-[var(--color-bg-secondary)]"
-                    : "border-[var(--color-border)]"
+                    ? "border-[var(--color-primary)] bg-[var(--color-info-bg)]"
+                    : "border-[var(--color-border)] bg-[var(--color-surface)]"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
