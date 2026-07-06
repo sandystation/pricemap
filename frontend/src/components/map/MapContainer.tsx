@@ -74,11 +74,11 @@ export default function MapContainer({
               <p>
                 {comp.area_sqm} m² | {comp.property_type}
               </p>
-              <p className="text-gray-500">
+              <p className="text-[var(--color-text-secondary)]">
                 {Math.round(comp.distance_m)}m away
               </p>
               {comp.address && (
-                <p className="mt-1 text-xs text-gray-400">{comp.address}</p>
+                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">{comp.address}</p>
               )}
             </div>
           </Popup>

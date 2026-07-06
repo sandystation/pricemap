@@ -77,7 +77,7 @@ function ResetInner() {
               <label className={labelClass} htmlFor="password">New password</label>
               <input id="password" type="password" autoComplete="new-password" required minLength={8}
                 value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} />
-              <p className="mt-1 text-xs text-gray-400">At least 8 characters.</p>
+              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">At least 8 characters.</p>
             </div>
             <div>
               <label className={labelClass} htmlFor="confirm">Confirm password</label>

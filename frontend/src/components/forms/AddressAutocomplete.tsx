@@ -124,7 +124,7 @@ export function AddressAutocomplete({
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg"
+          className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg"
         >
           {loading && (
             <li className="px-3 py-2 text-sm text-[var(--color-text-secondary)]" aria-live="polite">

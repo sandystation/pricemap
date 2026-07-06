@@ -17,7 +17,7 @@ const formatEur = (value: number) =>
 export function PriceCard({ result }: PriceCardProps) {
   if (result.method === "no_data") {
     return (
-      <div className="rounded-xl border border-[var(--color-border)] p-6">
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <p className="text-center text-[var(--color-text-secondary)]">
           Insufficient data to provide an estimate for this location. Try a
           different address or check back later as we collect more data.
@@ -27,7 +27,7 @@ export function PriceCard({ result }: PriceCardProps) {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--color-border)] p-6">
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
       <div className="text-center">
         <p className="text-sm text-[var(--color-text-secondary)]">
           Estimated Market Range
@@ -81,10 +81,6 @@ export function PriceCard({ result }: PriceCardProps) {
         </div>
       )}
 
-      <div className="mt-4 flex justify-between text-xs text-[var(--color-text-secondary)]">
-        <span>Method: {result.method}</span>
-        <span>Model: {result.model_version}</span>
-      </div>
       <p className="mt-4 text-xs text-[var(--color-text-secondary)]">
         Support analysis only. This is not a formal valuation or a substitute
         for professional judgment.
